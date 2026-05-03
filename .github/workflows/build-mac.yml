@@ -1,0 +1,112 @@
+name: Build Mac App and DMG
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 3.5.0)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: 'latest'
+
+      - name: Sync dependencies
+        run: uv sync
+
+      - name: Install PyInstaller
+        run: uv pip install pyinstaller
+
+      - name: Build TrendRadar.app
+        run: |
+          uv run pyinstaller TrendRadar.spec --clean --noconfirm
+
+      - name: Build MCP Server executable
+        run: |
+          uv run pyinstaller \
+            --onefile \
+            --name trendradar-mcp \
+            --hidden-import mcp_server.tools.data_query \
+            --hidden-import mcp_server.tools.analytics \
+            --hidden-import mcp_server.tools.search_tools \
+            --hidden-import mcp_server.tools.config_mgmt \
+            --hidden-import mcp_server.tools.system \
+            --hidden-import mcp_server.services.data_service \
+            --hidden-import mcp_server.services.parser_service \
+            --hidden-import mcp_server.services.cache_service \
+            --hidden-import mcp_server.utils.date_parser \
+            --hidden-import mcp_server.utils.errors \
+            --hidden-import mcp_server.utils.validators \
+            --hidden-import fastmcp \
+            --hidden-import fastmcp.server \
+            --hidden-import websockets.legacy.server \
+            --hidden-import pydantic \
+            --hidden-import pydantic_settings \
+            --add-data "templates:templates" \
+            --add-data "config:config" \
+            --add-data "version:." \
+            mcp_server/server.py
+
+      - name: Prepare app bundle for DMG
+        run: |
+          mkdir -p dist/dmg
+          cp -r "dist/TrendRadar.app" dist/dmg/
+          cp "dist/trendradar-mcp" dist/dmg/
+          # Create a symlink to Applications folder for easy drag-and-drop install
+          ln -s /Applications dist/dmg/Applications
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ -z "$VERSION" ]; then
+            VERSION="$(cat version)"
+          fi
+          create-dmg \
+            --volname "TrendRadar ${VERSION}" \
+            --window-pos 200 120 \
+            --window-size 800 500 \
+            --icon-size 100 \
+            --icon "TrendRadar.app" 200 200 \
+            --icon "trendradar-mcp" 400 200 \
+            --hide-extension "TrendRadar.app" \
+            --app-drop-link 600 200 \
+            --no-internet-enable \
+            "dist/TrendRadar-${VERSION}.dmg" \
+            "dist/dmg/"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrendRadar-mac-dmg
+          path: dist/TrendRadar-*.dmg
+
+      - name: Create Release and Upload Asset
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/TrendRadar-*.dmg
+          generate_release_notes: true
+          fail_on_unmatched_files: true

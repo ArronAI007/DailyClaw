@@ -1,0 +1,3 @@
+([('TrendRadar',
+   '/Users/arron/Desktop/ArronAI/DailyClaw/dist/TrendRadar',
+   'EXECUTABLE')],)
