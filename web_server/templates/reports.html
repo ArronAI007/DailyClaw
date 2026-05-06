@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% set active_page = "reports" %}
+{% block title %}报告 - DailyClaw{% endblock %}
+{% block page_title %}报告<span class="page-subtitle">共 {{ total_reports }} 份</span>{% endblock %}
+
+{% block content %}
+{% if grouped_reports %}
+    {% for date, reports in grouped_reports.items() %}
+    <div class="report-group">
+        <div class="report-group-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            {{ date }}
+            <span class="report-count">{{ reports | length }} 份</span>
+        </div>
+        <div class="report-grid">
+            {% for report in reports %}
+            <a href="/reports/view?path={{ report.path }}" class="report-card">
+                <div class="report-card-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                </div>
+                <div class="report-card-name">{{ report.filename }}</div>
+                <div class="report-card-meta">{{ (report.size / 1024) | round(1) }} KB</div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="empty-state empty-state-large">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+    </svg>
+    <h3>暂无报告</h3>
+    <p>请先执行爬取任务以生成报告</p>
+    <a href="/" class="btn btn-primary">前往概览</a>
+</div>
+{% endif %}
+{% endblock %}

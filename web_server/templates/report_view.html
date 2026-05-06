@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% set active_page = "reports" %}
+{% block title %}查看报告 - DailyClaw{% endblock %}
+{% block page_title %}查看报告{% endblock %}
+
+{% block content %}
+<div class="report-frame-container">
+    <iframe src="{{ report_path }}" class="report-frame"></iframe>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelector('.page-content').style.padding = '0';
+document.querySelector('.page-content').style.maxWidth = 'none';
+</script>
+{% endblock %}

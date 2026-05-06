@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+
+{% set active_page = "config" %}
+{% block title %}配置 - DailyClaw{% endblock %}
+{% block page_title %}配置管理{% endblock %}
+
+{% block content %}
+<div class="config-tabs">
+    <button class="config-tab active" data-tab="basic">基础设置</button>
+    <button class="config-tab" data-tab="platforms">平台</button>
+    <button class="config-tab" data-tab="notification">通知</button>
+    <button class="config-tab" data-tab="keywords">关注词</button>
+</div>
+
+<form id="configForm" class="config-form">
+    <!-- 基础设置 -->
+    <div class="config-panel active" data-panel="basic">
+        <div class="form-section">
+            <h3>爬虫设置</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>请求间隔 (毫秒)</label>
+                    <input type="number" name="request_interval" value="{{ config.request_interval or 1000 }}" min="100" max="10000">
+                </div>
+                <div class="form-group">
+                    <label>启用爬虫</label>
+                    <label class="switch">
+                        <input type="checkbox" name="enable_crawler" {% if config.enable_crawler %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>使用代理</label>
+                    <label class="switch">
+                        <input type="checkbox" name="use_proxy" {% if config.use_proxy %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>默认代理地址</label>
+                    <input type="text" name="default_proxy" value="{{ config.default_proxy or '' }}" placeholder="http://127.0.0.1:10086">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>报告设置</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>报告模式</label>
+                    <select name="report_mode">
+                        <option value="daily" {% if config.report_mode == 'daily' %}selected{% endif %}>当日汇总</option>
+                        <option value="incremental" {% if config.report_mode == 'incremental' %}selected{% endif %}>增量监控</option>
+                        <option value="current" {% if config.report_mode == 'current' %}selected{% endif %}>当前榜单</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>排名高亮阈值</label>
+                    <input type="number" name="rank_threshold" value="{{ config.rank_threshold or 5 }}" min="1" max="50">
+                </div>
+                <div class="form-group">
+                    <label>每关键词最大新闻数</label>
+                    <input type="number" name="max_news_per_keyword" value="{{ config.max_news_per_keyword or 0 }}" min="0" placeholder="0=不限制">
+                </div>
+                <div class="form-group">
+                    <label>按位置优先排序</label>
+                    <label class="switch">
+                        <input type="checkbox" name="sort_by_position_first" {% if config.sort_by_position_first %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>反转内容顺序</label>
+                    <label class="switch">
+                        <input type="checkbox" name="reverse_content_order" {% if config.reverse_content_order %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>权重配置</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>排名权重</label>
+                    <input type="number" name="rank_weight" value="{{ config.rank_weight or 0.6 }}" min="0" max="1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>频次权重</label>
+                    <input type="number" name="frequency_weight" value="{{ config.frequency_weight or 0.3 }}" min="0" max="1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>热度权重</label>
+                    <input type="number" name="hotness_weight" value="{{ config.hotness_weight or 0.1 }}" min="0" max="1" step="0.1">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 平台 -->
+    <div class="config-panel" data-panel="platforms">
+        <div class="form-section">
+            <div class="section-header">
+                <h3>监控平台</h3>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="addPlatform()">+ 添加平台</button>
+            </div>
+            <div id="platformsList" class="platforms-list">
+                {% for platform in config.platforms or [] %}
+                <div class="platform-row" data-index="{{ loop.index0 }}">
+                    <input type="text" name="platform_id_{{ loop.index0 }}" value="{{ platform.id }}" placeholder="平台ID">
+                    <input type="text" name="platform_name_{{ loop.index0 }}" value="{{ platform.name }}" placeholder="显示名称">
+                    <button type="button" class="btn btn-icon btn-danger" onclick="removePlatform(this)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知 -->
+    <div class="config-panel" data-panel="notification">
+        <div class="form-section">
+            <h3>通知设置</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>启用通知</label>
+                    <label class="switch">
+                        <input type="checkbox" name="enable_notification" {% if config.enable_notification %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>消息分批大小</label>
+                    <input type="number" name="message_batch_size" value="{{ config.message_batch_size or 4000 }}">
+                </div>
+                <div class="form-group">
+                    <label>批次发送间隔 (秒)</label>
+                    <input type="number" name="batch_send_interval" value="{{ config.batch_send_interval or 3 }}">
+                </div>
+                <div class="form-group">
+                    <label>每渠道最大账号数</label>
+                    <input type="number" name="max_accounts_per_channel" value="{{ config.max_accounts_per_channel or 3 }}" min="1" max="10">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>推送时间窗口</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>启用时间窗口</label>
+                    <label class="switch">
+                        <input type="checkbox" name="push_window_enabled" {% if config.push_window_enabled %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>开始时间</label>
+                    <input type="time" name="push_window_start" value="{{ config.push_window_start or '08:00' }}">
+                </div>
+                <div class="form-group">
+                    <label>结束时间</label>
+                    <input type="time" name="push_window_end" value="{{ config.push_window_end or '22:00' }}">
+                </div>
+                <div class="form-group">
+                    <label>每天只推送一次</label>
+                    <label class="switch">
+                        <input type="checkbox" name="push_window_once_per_day" {% if config.push_window_once_per_day %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关注词 -->
+    <div class="config-panel" data-panel="keywords">
+        <div class="form-section">
+            <div class="section-header">
+                <h3>频率关注词</h3>
+                <span class="hint">每行一个词组，必填词用 [] 包裹，普通词直接填写</span>
+            </div>
+            <textarea name="frequency_words" class="code-editor" rows="20" placeholder="例如：
+[AI] 人工智能
+[DeepSeek]
+哪吒 饺子
+">{{ frequency_words }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <div id="saveResult" class="save-result"></div>
+        <button type="button" class="btn btn-primary btn-lg" onclick="saveConfig()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            保存配置
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 标签切换
+document.querySelectorAll('.config-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.config-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelector(`[data-panel="${tab.dataset.tab}"]`).classList.add('active');
+    });
+});
+
+// 添加平台
+let platformIndex = document.querySelectorAll('.platform-row').length;
+function addPlatform() {
+    const list = document.getElementById('platformsList');
+    const row = document.createElement('div');
+    row.className = 'platform-row';
+    row.dataset.index = platformIndex;
+    row.innerHTML = `
+        <input type="text" name="platform_id_${platformIndex}" placeholder="平台ID">
+        <input type="text" name="platform_name_${platformIndex}" placeholder="显示名称">
+        <button type="button" class="btn btn-icon btn-danger" onclick="removePlatform(this)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+    `;
+    list.appendChild(row);
+    platformIndex++;
+}
+
+function removePlatform(btn) {
+    btn.closest('.platform-row').remove();
+}
+
+// 保存配置
+async function saveConfig() {
+    const form = document.getElementById('configForm');
+    const resultEl = document.getElementById('saveResult');
+    const btn = form.querySelector('.btn-primary');
+    const originalText = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = '保存中...';
+    resultEl.className = 'save-result';
+    resultEl.textContent = '';
+
+    // 收集表单数据
+    const data = {
+        version_check_url: form.querySelector('[name="version_check_url"]')?.value || '',
+        show_version_update: form.querySelector('[name="show_version_update"]')?.checked ?? true,
+        request_interval: parseInt(form.querySelector('[name="request_interval"]').value) || 1000,
+        enable_crawler: form.querySelector('[name="enable_crawler"]')?.checked ?? true,
+        use_proxy: form.querySelector('[name="use_proxy"]')?.checked ?? false,
+        default_proxy: form.querySelector('[name="default_proxy"]')?.value || '',
+        report_mode: form.querySelector('[name="report_mode"]')?.value || 'daily',
+        rank_threshold: parseInt(form.querySelector('[name="rank_threshold"]').value) || 5,
+        sort_by_position_first: form.querySelector('[name="sort_by_position_first"]')?.checked ?? false,
+        max_news_per_keyword: parseInt(form.querySelector('[name="max_news_per_keyword"]').value) || 0,
+        reverse_content_order: form.querySelector('[name="reverse_content_order"]')?.checked ?? false,
+        enable_notification: form.querySelector('[name="enable_notification"]')?.checked ?? true,
+        message_batch_size: parseInt(form.querySelector('[name="message_batch_size"]').value) || 4000,
+        batch_send_interval: parseInt(form.querySelector('[name="batch_send_interval"]').value) || 3,
+        max_accounts_per_channel: parseInt(form.querySelector('[name="max_accounts_per_channel"]').value) || 3,
+        push_window_enabled: form.querySelector('[name="push_window_enabled"]')?.checked ?? false,
+        push_window_start: form.querySelector('[name="push_window_start"]')?.value || '08:00',
+        push_window_end: form.querySelector('[name="push_window_end"]')?.value || '22:00',
+        push_window_once_per_day: form.querySelector('[name="push_window_once_per_day"]')?.checked ?? true,
+        rank_weight: parseFloat(form.querySelector('[name="rank_weight"]').value) || 0.6,
+        frequency_weight: parseFloat(form.querySelector('[name="frequency_weight"]').value) || 0.3,
+        hotness_weight: parseFloat(form.querySelector('[name="hotness_weight"]').value) || 0.1,
+        platforms: [],
+        webhooks: {}
+    };
+
+    // 收集平台
+    document.querySelectorAll('.platform-row').forEach(row => {
+        const idInput = row.querySelector('input[name^="platform_id_"]');
+        const nameInput = row.querySelector('input[name^="platform_name_"]');
+        if (idInput.value.trim() && nameInput.value.trim()) {
+            data.platforms.push({ id: idInput.value.trim(), name: nameInput.value.trim() });
+        }
+    });
+
+    try {
+        // 保存主配置
+        const res = await fetch('/api/config/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+
+        if (!result.success) {
+            resultEl.className = 'save-result error';
+            resultEl.textContent = result.message + (result.errors ? ': ' + result.errors.join(', ') : '');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            return;
+        }
+
+        // 保存频率词
+        const freqWords = form.querySelector('[name="frequency_words"]')?.value || '';
+        const freqRes = await fetch('/api/config/save-frequency-words', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: freqWords })
+        });
+        const freqResult = await freqRes.json();
+
+        if (freqResult.success) {
+            resultEl.className = 'save-result success';
+            resultEl.textContent = '配置保存成功！';
+        } else {
+            resultEl.className = 'save-result warning';
+            resultEl.textContent = '主配置已保存，频率词保存失败: ' + freqResult.message;
+        }
+    } catch (e) {
+        resultEl.className = 'save-result error';
+        resultEl.textContent = '保存失败: ' + e.message;
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+}
+</script>
+{% endblock %}
