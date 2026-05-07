@@ -1020,7 +1020,7 @@ frequency_words.txt file added **required word** feature, using + sign
       - Search `@BotFather` in Telegram (note case, has blue verification checkmark, shows ~37849827 monthly users, this is official, beware of fake accounts)
       - Send `/newbot` command to create new bot
       - Set bot name (must end with "bot", easily runs into duplicate names, so think creatively)
-      - Get Bot Token (format like: `123456789:AAHfiqksKZ8WmR2zSjiQ7_v4TMAKdiHm9T0`)
+      - Get Bot Token (format like: `123456789:AAHfiqksKZ8WmR2zSjiQ7_xxx`)
 
    2. **Get Chat ID**:
 

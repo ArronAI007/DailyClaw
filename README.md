@@ -1057,7 +1057,7 @@ frequency_words.txt 文件增加了一个【必须词】功能，使用 + 号
       - 在 Telegram 中搜索 `@BotFather`（大小写注意，有蓝色徽章勾勾，有类似 37849827 monthly users，这个才是官方的，有一些仿官方的账号注意辨别）
       - 发送 `/newbot` 命令创建新机器人
       - 设置机器人名称（必须以"bot"结尾，很容易遇到重复名字，所以你要绞尽脑汁想不同的名字）
-      - 获取 Bot Token（格式如：`123456789:AAHfiqksKZ8WmR2zSjiQ7_v4TMAKdiHm9T0`）
+      - 获取 Bot Token（格式如：`123456789:AAHfiqksKZ8WmR2zSjiQ7_xxx`）
 
    2. **获取 Chat ID**：
 
