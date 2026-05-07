@@ -110,6 +110,7 @@
                 <div class="platform-row" data-index="{{ loop.index0 }}">
                     <input type="text" name="platform_id_{{ loop.index0 }}" value="{{ platform.id }}" placeholder="平台ID">
                     <input type="text" name="platform_name_{{ loop.index0 }}" value="{{ platform.name }}" placeholder="显示名称">
+                    <input type="text" name="platform_url_{{ loop.index0 }}" value="{{ platform.url or '' }}" placeholder="请求URL（可选，留空使用默认）">
                     <button type="button" class="btn btn-icon btn-danger" onclick="removePlatform(this)">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="18" y1="6" x2="6" y2="18"/>
@@ -176,6 +177,80 @@
                 </div>
             </div>
         </div>
+
+        <div class="form-section">
+            <h3>Webhook 推送渠道</h3>
+            <p class="hint">支持多账号：用分号(;)分隔多个地址或账号</p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>飞书 Webhook</label>
+                    <input type="text" name="feishu_url" value="{{ config.webhooks.get('feishu_url', '') }}" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/...">
+                </div>
+                <div class="form-group">
+                    <label>钉钉 Webhook</label>
+                    <input type="text" name="dingtalk_url" value="{{ config.webhooks.get('dingtalk_url', '') }}" placeholder="https://oapi.dingtalk.com/robot/send?access_token=...">
+                </div>
+                <div class="form-group">
+                    <label>企业微信 Webhook</label>
+                    <input type="text" name="wework_url" value="{{ config.webhooks.get('wework_url', '') }}" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...">
+                </div>
+                <div class="form-group">
+                    <label>企业微信消息类型</label>
+                    <select name="wework_msg_type">
+                        <option value="markdown" {% if config.webhooks.get('wework_msg_type') == 'markdown' %}selected{% endif %}>markdown (群机器人)</option>
+                        <option value="text" {% if config.webhooks.get('wework_msg_type') == 'text' %}selected{% endif %}>text (个人微信应用)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Telegram Bot Token</label>
+                    <input type="text" name="telegram_bot_token" value="{{ config.webhooks.get('telegram_bot_token', '') }}" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                </div>
+                <div class="form-group">
+                    <label>Telegram Chat ID</label>
+                    <input type="text" name="telegram_chat_id" value="{{ config.webhooks.get('telegram_chat_id', '') }}" placeholder="@channelname 或 123456789">
+                </div>
+                <div class="form-group">
+                    <label>发件人邮箱</label>
+                    <input type="text" name="email_from" value="{{ config.webhooks.get('email_from', '') }}" placeholder="sender@example.com">
+                </div>
+                <div class="form-group">
+                    <label>邮箱密码 / 授权码</label>
+                    <input type="password" name="email_password" value="{{ config.webhooks.get('email_password', '') }}" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label>收件人邮箱</label>
+                    <input type="text" name="email_to" value="{{ config.webhooks.get('email_to', '') }}" placeholder="receiver@example.com, 多个用逗号分隔">
+                </div>
+                <div class="form-group">
+                    <label>SMTP 服务器</label>
+                    <input type="text" name="email_smtp_server" value="{{ config.webhooks.get('email_smtp_server', '') }}" placeholder="smtp.example.com (留空自动识别)">
+                </div>
+                <div class="form-group">
+                    <label>SMTP 端口</label>
+                    <input type="text" name="email_smtp_port" value="{{ config.webhooks.get('email_smtp_port', '') }}" placeholder="587 (留空自动识别)">
+                </div>
+                <div class="form-group">
+                    <label>ntfy 服务器地址</label>
+                    <input type="text" name="ntfy_server_url" value="{{ config.webhooks.get('ntfy_server_url', 'https://ntfy.sh') }}" placeholder="https://ntfy.sh">
+                </div>
+                <div class="form-group">
+                    <label>ntfy 主题</label>
+                    <input type="text" name="ntfy_topic" value="{{ config.webhooks.get('ntfy_topic', '') }}" placeholder="mytopic">
+                </div>
+                <div class="form-group">
+                    <label>ntfy Token (可选)</label>
+                    <input type="text" name="ntfy_token" value="{{ config.webhooks.get('ntfy_token', '') }}" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label>Bark 推送 URL</label>
+                    <input type="text" name="bark_url" value="{{ config.webhooks.get('bark_url', '') }}" placeholder="https://api.day.app/your_device_key">
+                </div>
+                <div class="form-group">
+                    <label>Slack Webhook URL</label>
+                    <input type="text" name="slack_webhook_url" value="{{ config.webhooks.get('slack_webhook_url', '') }}" placeholder="https://hooks.slack.com/services/...">
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 关注词 -->
@@ -229,6 +304,7 @@ function addPlatform() {
     row.innerHTML = `
         <input type="text" name="platform_id_${platformIndex}" placeholder="平台ID">
         <input type="text" name="platform_name_${platformIndex}" placeholder="显示名称">
+        <input type="text" name="platform_url_${platformIndex}" placeholder="请求URL（可选，留空使用默认）">
         <button type="button" class="btn btn-icon btn-danger" onclick="removePlatform(this)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"/>
@@ -281,15 +357,37 @@ async function saveConfig() {
         frequency_weight: parseFloat(form.querySelector('[name="frequency_weight"]').value) || 0.3,
         hotness_weight: parseFloat(form.querySelector('[name="hotness_weight"]').value) || 0.1,
         platforms: [],
-        webhooks: {}
+        webhooks: {
+            feishu_url: form.querySelector('[name="feishu_url"]')?.value || '',
+            dingtalk_url: form.querySelector('[name="dingtalk_url"]')?.value || '',
+            wework_url: form.querySelector('[name="wework_url"]')?.value || '',
+            wework_msg_type: form.querySelector('[name="wework_msg_type"]')?.value || 'markdown',
+            telegram_bot_token: form.querySelector('[name="telegram_bot_token"]')?.value || '',
+            telegram_chat_id: form.querySelector('[name="telegram_chat_id"]')?.value || '',
+            email_from: form.querySelector('[name="email_from"]')?.value || '',
+            email_password: form.querySelector('[name="email_password"]')?.value || '',
+            email_to: form.querySelector('[name="email_to"]')?.value || '',
+            email_smtp_server: form.querySelector('[name="email_smtp_server"]')?.value || '',
+            email_smtp_port: form.querySelector('[name="email_smtp_port"]')?.value || '',
+            ntfy_server_url: form.querySelector('[name="ntfy_server_url"]')?.value || 'https://ntfy.sh',
+            ntfy_topic: form.querySelector('[name="ntfy_topic"]')?.value || '',
+            ntfy_token: form.querySelector('[name="ntfy_token"]')?.value || '',
+            bark_url: form.querySelector('[name="bark_url"]')?.value || '',
+            slack_webhook_url: form.querySelector('[name="slack_webhook_url"]')?.value || '',
+        }
     };
 
     // 收集平台
     document.querySelectorAll('.platform-row').forEach(row => {
         const idInput = row.querySelector('input[name^="platform_id_"]');
         const nameInput = row.querySelector('input[name^="platform_name_"]');
+        const urlInput = row.querySelector('input[name^="platform_url_"]');
         if (idInput.value.trim() && nameInput.value.trim()) {
-            data.platforms.push({ id: idInput.value.trim(), name: nameInput.value.trim() });
+            const platform = { id: idInput.value.trim(), name: nameInput.value.trim() };
+            if (urlInput && urlInput.value.trim()) {
+                platform.url = urlInput.value.trim();
+            }
+            data.platforms.push(platform);
         }
     });
 

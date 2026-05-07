@@ -2601,7 +2601,7 @@ class NewsAnalyzer:
         ids = []
         for platform in CONFIG["PLATFORMS"]:
             if "name" in platform:
-                ids.append((platform["id"], platform["name"]))
+                ids.append((platform["id"], platform["name"], platform.get("url", "")))
             else:
                 ids.append(platform["id"])
 

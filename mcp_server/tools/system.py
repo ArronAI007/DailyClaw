@@ -139,7 +139,7 @@ class SystemManagementTools:
             ids = []
             for platform in target_platforms:
                 if "name" in platform:
-                    ids.append((platform["id"], platform["name"]))
+                    ids.append((platform["id"], platform["name"], platform.get("url", "")))
                 else:
                     ids.append(platform["id"])
 
@@ -152,15 +152,21 @@ class SystemManagementTools:
 
             for i, id_info in enumerate(ids):
                 if isinstance(id_info, tuple):
-                    id_value, name = id_info
+                    id_value = id_info[0]
+                    name = id_info[1] if len(id_info) > 1 else id_value
+                    custom_url = id_info[2] if len(id_info) > 2 else ""
                 else:
                     id_value = id_info
                     name = id_value
+                    custom_url = ""
 
                 id_to_name[id_value] = name
 
                 # 构建请求URL
-                url = f"https://newsnow.busiyi.world/api/s?id={id_value}&latest"
+                if custom_url:
+                    url = custom_url.replace("{id}", id_value)
+                else:
+                    url = f"https://newsnow.busiyi.world/api/s?id={id_value}&latest"
 
                 headers = {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",

@@ -43,6 +43,8 @@
 
 
 > This project is designed to be lightweight and easy to deploy
+>
+> This project is based on [sansan0/TrendRadar](https://github.com/sansan0/TrendRadar) with additional development and feature extensions.
 
 <details>
 <summary>⚠️ Click to expand: <strong>Fork Guide: Docs, Resource Limits & Deployment Options</strong></summary>
@@ -252,6 +254,20 @@ Supports **WeWork** (+ WeChat push solution), **Feishu**, **DingTalk**, **Telegr
 - ⚠️ **Paired Configuration**: Telegram and ntfy require paired parameter quantities to match (e.g., token and chat_id both have 2 values)
 - ⚠️ **Quantity Limit**: Default maximum 3 accounts per channel, exceeded values will be truncated
 
+### **Web Control Panel (DailyClaw Exclusive)**
+
+Browser-based configuration interface built on FastAPI, manage all settings without editing config files:
+
+- **Dashboard Overview**: System status, latest news stats, platform status, trending topics
+- **Report Browser**: View historical HTML reports grouped by date, with iframe embedding
+- **Platform Configuration**: Visually add/remove/modify monitoring platforms, with custom request URLs per platform
+- **Notification Configuration**: Configure all push channels in browser: WeWork, Feishu, DingTalk, Telegram, Email, ntfy, Bark, Slack
+- **Settings Management**: Crawler settings, report mode, weight config, push time window, keywords
+- **Manual Trigger**: One-click manual crawl trigger from the Web UI
+
+Start: `./start-web.sh` (default port 18080)
+Access: `http://localhost:18080`
+
 ### **Multi-Platform Support**
 - **GitHub Pages**: Auto-generate beautiful web reports, PC/mobile adapted
 - **Docker Deployment**: Supports multi-architecture containerized operation
@@ -309,6 +325,34 @@ Transform from "algorithm recommendation captivity" to "actively getting the inf
 - **Minor Version Update**: Upgrading from v2.x to v2.y, replace `main.py` in your forked repo with the latest version
 - **Major Version Upgrade**: Upgrading from v1.x to v2.y, recommend deleting existing fork and re-forking to save effort and avoid config conflicts
 
+
+### 2025/05/07 - DailyClaw Web UI
+
+**🌐 Web Control Panel (Exclusive to this Fork)**
+
+1. **Dashboard-Style Web UI**
+   - Modern control panel based on FastAPI + Jinja2
+   - System status overview, latest news stats, trending topics, platform monitoring
+   - Dark/Light theme support
+
+2. **Visual Configuration Management**
+   - Modify all configurations directly in browser, no YAML editing required
+   - Support configuring crawler params, report mode, weights, push time window
+   - Support configuring all push channels: WeWork, Feishu, DingTalk, Telegram, Email, ntfy, Bark, Slack
+
+3. **Enhanced Platform Configuration**
+   - Custom request URL per platform
+   - Dynamically add/remove monitoring platforms
+   - Default 11 platforms pre-configured with URLs
+
+4. **Report Browsing & Manual Trigger**
+   - Browse historical HTML reports grouped by date
+   - One-click manual crawl trigger
+   - View latest report
+
+**Start**: `./start-web.sh` (default port 18080)
+
+---
 
 ### 2025/12/03 - v3.5.0
 

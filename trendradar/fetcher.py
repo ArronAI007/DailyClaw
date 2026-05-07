@@ -23,19 +23,25 @@ class DataFetcher:
 
     def fetch_data(
         self,
-        id_info: Union[str, Tuple[str, str]],
+        id_info: Union[str, Tuple[str, str], Tuple[str, str, str]],
         max_retries: int = 2,
         min_retry_wait: int = 3,
         max_retry_wait: int = 5,
     ) -> Tuple[Optional[str], str, str]:
         """获取指定ID数据，支持重试"""
+        custom_url = ""
         if isinstance(id_info, tuple):
-            id_value, alias = id_info
+            id_value = id_info[0]
+            alias = id_info[1] if len(id_info) > 1 else id_value
+            custom_url = id_info[2] if len(id_info) > 2 else ""
         else:
             id_value = id_info
             alias = id_value
 
-        url = f"https://newsnow.busiyi.world/api/s?id={id_value}&latest"
+        if custom_url:
+            url = custom_url.replace("{id}", id_value)
+        else:
+            url = f"https://newsnow.busiyi.world/api/s?id={id_value}&latest"
 
         proxies = None
         if self.proxy_url:
@@ -83,7 +89,7 @@ class DataFetcher:
 
     def crawl_websites(
         self,
-        ids_list: List[Union[str, Tuple[str, str]]],
+        ids_list: List[Union[str, Tuple[str, str], Tuple[str, str, str]]],
         request_interval: Optional[int] = None,
     ) -> Tuple[Dict, Dict, List]:
         """爬取多个网站数据"""
@@ -95,7 +101,8 @@ class DataFetcher:
 
         for i, id_info in enumerate(ids_list):
             if isinstance(id_info, tuple):
-                id_value, name = id_info
+                id_value = id_info[0]
+                name = id_info[1] if len(id_info) > 1 else id_value
             else:
                 id_value = id_info
                 name = id_value
