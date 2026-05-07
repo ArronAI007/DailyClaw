@@ -391,30 +391,99 @@ class SystemManagementTools:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP 爬取结果</title>
+    <title>今日热点新闻</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
-        h1 { color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
-        .platform { margin-bottom: 30px; }
-        .platform-name { background: #4CAF50; color: white; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
-        .news-item { padding: 8px; border-bottom: 1px solid #eee; }
-        .rank { color: #666; font-weight: bold; margin-right: 10px; }
-        .title { color: #333; }
-        .link { color: #1976D2; text-decoration: none; margin-left: 10px; font-size: 0.9em; }
-        .link:hover { text-decoration: underline; }
-        .failed { background: #ffebee; padding: 10px; border-radius: 5px; margin-top: 20px; }
-        .failed h3 { color: #c62828; margin-top: 0; }
-        .timestamp { color: #666; font-size: 0.9em; text-align: right; margin-top: 20px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+            background: #f8f9fa;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: #111827;
+            font-size: 28px;
+            font-weight: 700;
+            padding-bottom: 16px;
+            margin: 0 0 24px 0;
+            border-bottom: 2px solid #6366f1;
+            letter-spacing: -0.02em;
+        }
+        .platform { margin-bottom: 32px; }
+        .platform-name {
+            background: #6366f1;
+            color: #ffffff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+        .news-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+        .news-item:last-child { border-bottom: none; }
+        .rank {
+            color: #9ca3af;
+            font-weight: 600;
+            font-size: 15px;
+            min-width: 28px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .title {
+            color: #374151;
+            font-size: 15px;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        a.title {
+            color: #4f46e5;
+        }
+        a.title:hover {
+            color: #4338ca;
+            text-decoration: underline;
+        }
+        span.title { color: #374151; }
+        .failed {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 24px;
+        }
+        .failed h3 {
+            color: #dc2626;
+            margin: 0 0 10px 0;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .failed ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #991b1b;
+        }
+        .failed li { font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>MCP 爬取结果</h1>
+        <h1>今日热点新闻</h1>
 """
-
-        # 添加时间戳
-        html += f'        <p class="timestamp">爬取时间: {now.strftime("%Y-%m-%d %H:%M:%S")}</p>\n\n'
 
         # 遍历每个平台
         for platform_id, titles_data in results.items():
@@ -435,13 +504,13 @@ class SystemManagementTools:
 
             # 显示新闻
             for rank, title, url, mobile_url in sorted_items:
+                link_url = mobile_url or url
                 html += f'            <div class="news-item">\n'
                 html += f'                <span class="rank">{rank}.</span>\n'
-                html += f'                <span class="title">{self._html_escape(title)}</span>\n'
-                if url:
-                    html += f'                <a class="link" href="{self._html_escape(url)}" target="_blank">链接</a>\n'
-                if mobile_url and mobile_url != url:
-                    html += f'                <a class="link" href="{self._html_escape(mobile_url)}" target="_blank">移动版</a>\n'
+                if link_url:
+                    html += f'                <a class="title" href="{self._html_escape(link_url)}" target="_blank">{self._html_escape(title)}</a>\n'
+                else:
+                    html += f'                <span class="title">{self._html_escape(title)}</span>\n'
                 html += '            </div>\n'
 
             html += '        </div>\n\n'

@@ -9,7 +9,7 @@ import yaml
 from trendradar.logging_config import get_logger
 
 
-VERSION = "3.5.0"
+VERSION = "1.0.0"
 
 
 # === SMTP邮件配置 ===

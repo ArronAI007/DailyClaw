@@ -610,19 +610,11 @@ class DataService:
                         if item.is_file():
                             total_storage += item.stat().st_size
 
-        # 读取版本信息
-        version_file = self.parser.project_root / "version"
-        version = "unknown"
-        if version_file.exists():
-            try:
-                with open(version_file, "r") as f:
-                    version = f.read().strip()
-            except:
-                pass
+        from trendradar.config import VERSION
 
         return {
             "system": {
-                "version": version,
+                "version": VERSION,
                 "project_root": str(self.parser.project_root)
             },
             "data": {

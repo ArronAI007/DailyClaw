@@ -325,7 +325,7 @@ async def api_save_frequency_words(request: Request):
 
 # ============== 启动入口 ==============
 
-def run_web_server(host: str = "0.0.0.0", port: int = 18080):
+def run_web_server(host: str = "0.0.0.0", port: int = 18080, reload: bool = False):
     """启动 Web 服务器"""
     import uvicorn
 
@@ -333,9 +333,17 @@ def run_web_server(host: str = "0.0.0.0", port: int = 18080):
     logger.info("  DailyClaw Web UI Server")
     logger.info("=" * 60)
     logger.info(f"  访问地址: http://{host}:{port}")
+    if reload:
+        logger.info("  热重载: 已启用 (代码修改后自动生效)")
     logger.info("=" * 60)
 
-    uvicorn.run(app, host=host, port=port, log_level="info")
+    uvicorn.run(
+        "web_server.server:app",
+        host=host,
+        port=port,
+        log_level="info",
+        reload=reload,
+    )
 
 
 if __name__ == "__main__":
@@ -344,6 +352,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="DailyClaw Web UI Server")
     parser.add_argument("--host", default="0.0.0.0", help="监听地址")
     parser.add_argument("--port", type=int, default=18080, help="监听端口")
+    parser.add_argument(
+        "--reload",
+        action="store_true",
+        default=False,
+        help="启用热重载 (代码修改后自动重启)",
+    )
 
     args = parser.parse_args()
-    run_web_server(host=args.host, port=args.port)
+    run_web_server(host=args.host, port=args.port, reload=args.reload)
