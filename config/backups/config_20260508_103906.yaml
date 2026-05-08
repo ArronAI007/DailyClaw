@@ -23,23 +23,7 @@ notification:
       start: '20:00'
       end: '22:00'
     once_per_day: true
-  webhooks:
-    feishu_url: ''
-    dingtalk_url: ''
-    wework_url: ''
-    wework_msg_type: markdown
-    telegram_bot_token: ''
-    telegram_chat_id: ''
-    email_from: ''
-    email_password: ''
-    email_to: ''
-    email_smtp_server: ''
-    email_smtp_port: ''
-    ntfy_server_url: https://ntfy.sh
-    ntfy_topic: ''
-    ntfy_token: ''
-    bark_url: ''
-    slack_webhook_url: ''
+  webhooks: {}
 weight:
   rank_weight: 0.6
   frequency_weight: 0.3

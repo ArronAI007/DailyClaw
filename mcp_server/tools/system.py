@@ -196,12 +196,13 @@ class SystemManagementTools:
                         status_info = "最新数据" if status == "success" else "缓存数据"
                         logger.info(f"获取 {id_value} 成功（{status_info}）")
 
-                        # 解析数据
+                        # 解析数据（每个平台最多取 10 条）
                         results[id_value] = {}
-                        for index, item in enumerate(data_json.get("items", []), 1):
+                        for index, item in enumerate(data_json.get("items", [])[:10], 1):
                             title = item["title"]
                             url_link = item.get("url", "")
                             mobile_url = item.get("mobileUrl", "")
+                            summary = item.get("description", "") or item.get("summary", "") or item.get("desc", "")
 
                             if title in results[id_value]:
                                 results[id_value][title]["ranks"].append(index)
@@ -210,6 +211,7 @@ class SystemManagementTools:
                                     "ranks": [index],
                                     "url": url_link,
                                     "mobileUrl": mobile_url,
+                                    "summary": summary,
                                 }
 
                         success = True
@@ -239,7 +241,8 @@ class SystemManagementTools:
                         "platform_id": platform_id,
                         "platform_name": platform_name,
                         "title": title,
-                        "ranks": info["ranks"]
+                        "ranks": info["ranks"],
+                        "summary": info.get("summary", "")
                     }
 
                     # 条件性添加 URL 字段
@@ -433,7 +436,7 @@ class SystemManagementTools:
             padding: 10px 12px;
             border-bottom: 1px solid #f3f4f6;
             display: flex;
-            align-items: baseline;
+            align-items: flex-start;
             gap: 10px;
         }
         .news-item:last-child { border-bottom: none; }
@@ -444,12 +447,18 @@ class SystemManagementTools:
             min-width: 28px;
             text-align: right;
             flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .news-content {
+            flex: 1;
+            min-width: 0;
         }
         .title {
             color: #374151;
             font-size: 15px;
             text-decoration: none;
             transition: color 0.15s ease;
+            line-height: 1.5;
         }
         a.title {
             color: #4f46e5;
@@ -459,6 +468,13 @@ class SystemManagementTools:
             text-decoration: underline;
         }
         span.title { color: #374151; }
+        .summary {
+            color: #6b7280;
+            font-size: 13px;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+        .summary:empty { display: none; }
         .failed {
             background: #fef2f2;
             border: 1px solid #fecaca;
@@ -497,20 +513,25 @@ class SystemManagementTools:
                 ranks = info.get("ranks", [])
                 url = info.get("url", "")
                 mobile_url = info.get("mobileUrl", "")
+                summary = info.get("summary", "")
                 rank = ranks[0] if ranks else 999
-                sorted_items.append((rank, title, url, mobile_url))
+                sorted_items.append((rank, title, url, mobile_url, summary))
 
             sorted_items.sort(key=lambda x: x[0])
 
             # 显示新闻
-            for rank, title, url, mobile_url in sorted_items:
+            for rank, title, url, mobile_url, summary in sorted_items:
                 link_url = mobile_url or url
                 html += f'            <div class="news-item">\n'
                 html += f'                <span class="rank">{rank}.</span>\n'
+                html += f'                <div class="news-content">\n'
                 if link_url:
-                    html += f'                <a class="title" href="{self._html_escape(link_url)}" target="_blank">{self._html_escape(title)}</a>\n'
+                    html += f'                    <a class="title" href="{self._html_escape(link_url)}" target="_blank">{self._html_escape(title)}</a>\n'
                 else:
-                    html += f'                <span class="title">{self._html_escape(title)}</span>\n'
+                    html += f'                    <span class="title">{self._html_escape(title)}</span>\n'
+                if summary:
+                    html += f'                    <div class="summary">{self._html_escape(summary)}</div>\n'
+                html += '                </div>\n'
                 html += '            </div>\n'
 
             html += '        </div>\n\n'

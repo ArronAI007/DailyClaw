@@ -917,13 +917,105 @@ a:hover {
   border-color: var(--color-primary);
 }
 
+/* Frequency Words */
+.frequency-words-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.frequency-word-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.frequency-word-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.frequency-word-row input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.frequency-word-row input[readonly] {
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-style: italic;
+  border-style: dashed;
+}
+
 /* Form Actions */
 .form-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 16px;
-  padding-top: 10px;
+  padding: 16px 0;
+  position: sticky;
+  bottom: 0;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+  z-index: 10;
+}
+
+/* Frequency Words Pagination */
+.frequency-words-container {
+  max-height: 480px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: var(--color-surface);
+}
+
+.frequency-words-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.frequency-word-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.frequency-word-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.frequency-word-row input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.freq-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 8px 0;
+}
+
+.freq-pagination .page-info {
+  font-size: 0.85rem;
+  color: var(--color-muted);
 }
 
 .save-result {

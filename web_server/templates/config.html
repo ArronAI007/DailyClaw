@@ -258,13 +258,29 @@
         <div class="form-section">
             <div class="section-header">
                 <h3>频率关注词</h3>
-                <span class="hint">每行一个词组，必填词用 [] 包裹，普通词直接填写</span>
+                <span class="hint">每行一个关键词，!开头为过滤词</span>
             </div>
-            <textarea name="frequency_words" class="code-editor" rows="20" placeholder="例如：
-[AI] 人工智能
-[DeepSeek]
-哪吒 饺子
-">{{ frequency_words }}</textarea>
+            <div class="frequency-words-container">
+                <div id="frequencyWordsList" class="frequency-words-list">
+                    {% set raw_lines = frequency_words.split('\n') if frequency_words else [''] %}
+                    {% set lines = raw_lines[:-1] if raw_lines and raw_lines[-1] == '' else raw_lines %}
+                    {% for line in lines %}
+                    <div class="frequency-word-row" data-freq-idx="{{ loop.index0 }}">
+                        <input type="text" class="frequency-word-input" value="{{ line }}" placeholder="输入关键词">
+                        <button type="button" class="btn btn-icon btn-danger" onclick="removeFrequencyWord(this)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="freq-pagination" id="freqPagination"></div>
+            <div style="margin-top: 12px;">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="addFrequencyWord()">+ 添加词</button>
+            </div>
         </div>
     </div>
 
@@ -285,14 +301,26 @@
 {% block extra_js %}
 <script>
 // 标签切换
+function switchConfigTab(tabName) {
+    document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.config-panel').forEach(p => p.classList.remove('active'));
+    const targetTab = document.querySelector(`.config-tab[data-tab="${tabName}"]`);
+    if (targetTab) {
+        targetTab.classList.add('active');
+        document.querySelector(`[data-panel="${tabName}"]`).classList.add('active');
+    }
+}
+
 document.querySelectorAll('.config-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-        document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.config-panel').forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        document.querySelector(`[data-panel="${tab.dataset.tab}"]`).classList.add('active');
+        switchConfigTab(tab.dataset.tab);
     });
 });
+
+// URL hash 自动切换标签
+if (window.location.hash === '#keywords') {
+    switchConfigTab('keywords');
+}
 
 // 添加平台
 let platformIndex = document.querySelectorAll('.platform-row').length;
@@ -319,6 +347,76 @@ function addPlatform() {
 function removePlatform(btn) {
     btn.closest('.platform-row').remove();
 }
+
+// 关注词分页
+const FREQ_PAGE_SIZE = 18;
+let freqCurrentPage = 1;
+
+function initFreqPagination() {
+    showFreqPage(1);
+}
+
+function showFreqPage(page) {
+    const rows = document.querySelectorAll('.frequency-word-row');
+    const totalPages = Math.max(1, Math.ceil(rows.length / FREQ_PAGE_SIZE));
+    page = Math.max(1, Math.min(page, totalPages));
+    freqCurrentPage = page;
+
+    rows.forEach((row, idx) => {
+        row.style.display = (Math.floor(idx / FREQ_PAGE_SIZE) + 1) === page ? '' : 'none';
+    });
+
+    renderFreqPagination(totalPages);
+}
+
+function renderFreqPagination(totalPages) {
+    const el = document.getElementById('freqPagination');
+    if (totalPages <= 1) {
+        el.innerHTML = '';
+        return;
+    }
+    el.innerHTML = `
+        <button type="button" class="btn btn-sm btn-secondary" onclick="showFreqPage(${freqCurrentPage - 1})" ${freqCurrentPage === 1 ? 'disabled' : ''}>上一页</button>
+        <span class="page-info">第 ${freqCurrentPage} / ${totalPages} 页</span>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="showFreqPage(${freqCurrentPage + 1})" ${freqCurrentPage === totalPages ? 'disabled' : ''}>下一页</button>
+    `;
+}
+
+// 关注词管理
+function addFrequencyWord() {
+    const list = document.getElementById('frequencyWordsList');
+    const row = document.createElement('div');
+    row.className = 'frequency-word-row';
+    row.innerHTML = `
+        <input type="text" class="frequency-word-input" value="" placeholder="输入关键词">
+        <button type="button" class="btn btn-icon btn-danger" onclick="removeFrequencyWord(this)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
+    `;
+    list.appendChild(row);
+    row.querySelector('input').focus();
+
+    const rows = document.querySelectorAll('.frequency-word-row');
+    const totalPages = Math.max(1, Math.ceil(rows.length / FREQ_PAGE_SIZE));
+    showFreqPage(totalPages);
+}
+
+function removeFrequencyWord(btn) {
+    btn.closest('.frequency-word-row').remove();
+    const rows = document.querySelectorAll('.frequency-word-row');
+    const totalPages = Math.max(1, Math.ceil(rows.length / FREQ_PAGE_SIZE));
+    if (freqCurrentPage > totalPages) {
+        showFreqPage(totalPages);
+    } else {
+        showFreqPage(freqCurrentPage);
+    }
+}
+
+// 页面加载后初始化分页
+initFreqPagination();
 
 // 保存配置
 async function saveConfig() {
@@ -409,7 +507,9 @@ async function saveConfig() {
         }
 
         // 保存频率词
-        const freqWords = form.querySelector('[name="frequency_words"]')?.value || '';
+        const freqInputs = document.querySelectorAll('.frequency-word-input');
+        const freqLines = Array.from(freqInputs).map(input => input.value);
+        const freqWords = freqLines.join('\n');
         const freqRes = await fetch('/api/config/save-frequency-words', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
