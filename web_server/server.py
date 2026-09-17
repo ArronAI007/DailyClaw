@@ -11,6 +11,7 @@ DailyClaw Web Server
 import json
 import os
 import re
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -181,11 +182,15 @@ def get_platform_status() -> List[Dict[str, Any]]:
         config = config_mgr.load_config()
         platforms = config.get("platforms", [])
 
-        # 尝试获取最新数据来显示哪些平台有数据
+        # 尝试获取最近一次采集的数据来显示哪些平台有数据
+        # 用最近一次报告而非严格的"今天"，避免跨天后短暂显示全部离线
         try:
-            data_service = get_data_service()
-            latest_news = data_service.get_latest_news(limit=1000)
-            active_platforms = set(n["platform"] for n in latest_news)
+            latest_reports = get_report_list()
+            if latest_reports:
+                latest_groups = parse_news_txt(latest_reports[0]["txt_path"])
+                active_platforms = set(g["platform_id"] for g in latest_groups)
+            else:
+                active_platforms = set()
         except Exception:
             active_platforms = set()
 
@@ -201,6 +206,59 @@ def get_platform_status() -> List[Dict[str, Any]]:
     except Exception as e:
         logger.exception(f"获取平台状态失败: {e}")
         return []
+
+
+def get_trending_topics_from_latest_report(top_n: int = 5) -> List[Dict[str, Any]]:
+    """基于最近一次采集报告统计个人关注词出现频率
+
+    不依赖严格的"今天"日期过滤（与 DataService.get_trending_topics 不同），
+    避免跨天后、当天还没有新采集数据时趋势话题错误地显示为空
+    """
+    latest_reports = get_report_list()
+    if not latest_reports:
+        return []
+
+    groups = parse_news_txt(latest_reports[0]["txt_path"])
+    titles = [item["title"] for g in groups for item in g["news_items"]]
+    if not titles:
+        return []
+
+    word_groups = get_data_service().parser.parse_frequency_words()
+
+    word_frequency: Counter = Counter()
+    keyword_to_news: Dict[str, List[str]] = {}
+
+    for title in titles:
+        for group in word_groups:
+            all_words = group.get("required", []) + group.get("normal", [])
+            for word in all_words:
+                if word and word in title:
+                    word_frequency[word] += 1
+                    keyword_to_news.setdefault(word, []).append(title)
+
+    top_keywords = word_frequency.most_common(top_n)
+    all_frequencies = list(word_frequency.values())
+    avg_frequency = sum(all_frequencies) / len(all_frequencies) if all_frequencies else 1
+    max_frequency = top_keywords[0][1] if top_keywords else 1
+
+    topics = []
+    for keyword, frequency in top_keywords:
+        if frequency > avg_frequency * 1.3:
+            trend = "rising"
+        elif frequency < avg_frequency * 0.7:
+            trend = "falling"
+        else:
+            trend = "stable"
+
+        topics.append({
+            "keyword": keyword,
+            "frequency": frequency,
+            "matched_news": len(set(keyword_to_news.get(keyword, []))),
+            "trend": trend,
+            "weight_score": round(frequency / max_frequency, 2) if max_frequency else 0.0,
+        })
+
+    return topics
 
 
 # 阅读记录：记录用户在 Web UI 中点开过的新闻，供概览页展示
@@ -277,19 +335,25 @@ async def dashboard(request: Request):
         logger.exception(f"获取系统状态失败: {e}")
         status = {"system": {"version": VERSION}, "data": {}, "health": "unknown"}
 
-    # 获取最新新闻统计
+    # 获取最新新闻统计：取最近一次采集报告的实际条数，
+    # 而不是严格按自然日"今天"过滤——避免刚过零点、
+    # 当天还没有新采集数据时统计错误地显示为 0
     try:
-        data_service = get_data_service()
-        latest_news = data_service.get_latest_news(limit=50)
-        total_news_today = len(latest_news)
-    except Exception:
+        latest_reports = get_report_list()
+        if latest_reports:
+            latest_groups = parse_news_txt(latest_reports[0]["txt_path"])
+            total_news_today = sum(len(g["news_items"]) for g in latest_groups)
+        else:
+            total_news_today = 0
+    except Exception as e:
+        logger.exception(f"获取最新新闻统计失败: {e}")
         total_news_today = 0
 
-    # 获取趋势话题
+    # 获取趋势话题（基于最近一次采集报告，同样不卡"今天"这个硬边界）
     try:
-        trending = data_service.get_trending_topics(top_n=5, mode="daily")
-        trending_topics = trending.get("topics", [])
-    except Exception:
+        trending_topics = get_trending_topics_from_latest_report(top_n=5)
+    except Exception as e:
+        logger.exception(f"获取趋势话题失败: {e}")
         trending_topics = []
 
     # 平台状态
