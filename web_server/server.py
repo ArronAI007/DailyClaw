@@ -302,7 +302,9 @@ def format_relative_time(iso_str: str) -> str:
 
 def add_read_history(title: str, url: str, platform: str) -> None:
     """新增一条阅读记录，按 url 去重并置顶，超出上限时裁剪"""
-    if not url:
+    if not url or not url.lower().startswith(("http://", "https://")):
+        # 只接受 http(s) 链接，避免 javascript: 等协议的链接被存入后
+        # 在概览页渲染成可点击的超链接，造成存储型 XSS
         return
 
     history = load_read_history()
