@@ -84,3 +84,23 @@
 
 // Theme toggle button
 document.getElementById('themeToggle')?.addEventListener('click', window.toggleTheme);
+
+// Read History Tracking
+// 点击任意新闻标题链接时，上报到后端，供概览页「最近阅读」展示
+(function () {
+  document.addEventListener('click', function (e) {
+    const link = e.target.closest('.report-news-link');
+    if (!link) return;
+
+    try {
+      const payload = JSON.stringify({
+        title: link.dataset.title || link.textContent.trim(),
+        url: link.href,
+        platform: link.dataset.platform || '',
+      });
+      navigator.sendBeacon('/api/read-history', new Blob([payload], { type: 'application/json' }));
+    } catch {
+      // 阅读记录上报失败不影响正常跳转
+    }
+  });
+})();

@@ -6,6 +6,7 @@
 
 {% block content %}
 {% if grouped_reports %}
+    {% set ns = namespace(is_first=true) %}
     {% for date, reports in grouped_reports.items() %}
     <div class="report-group">
         <div class="report-group-header">
@@ -18,20 +19,43 @@
             {{ date }}
             <span class="report-count">{{ reports | length }} 份</span>
         </div>
-        <div class="report-grid">
-            {% for report in reports %}
-            <a href="/reports/view?path={{ report.path }}" class="report-card">
-                <div class="report-card-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                    </svg>
+
+        {% for report in reports %}
+        <details class="report-detail" {% if ns.is_first %}open{% endif %}>
+            {% set ns.is_first = false %}
+            <summary class="report-detail-summary">
+                <span class="report-detail-time">{{ report.time_label }}</span>
+                <span class="report-detail-count">{{ report.total_items }} 条新闻</span>
+                <a href="/reports/view?path={{ report.path }}" class="report-detail-link" onclick="event.stopPropagation()">查看完整报告 ↗</a>
+            </summary>
+
+            <div class="report-detail-body">
+                {% if report.groups %}
+                <div class="report-platform-grid">
+                    {% for group in report.groups %}
+                    <div class="report-platform-group">
+                        <div class="report-platform-header">
+                            <span>{{ group.platform_name }}</span>
+                            <span class="report-platform-count">{{ group.news_items | length }}</span>
+                        </div>
+                        <ol class="report-news-list">
+                            {% for item in group.news_items %}
+                            <li>
+                                <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" class="report-news-link" data-title="{{ item.title }}" data-platform="{{ group.platform_name }}">{{ item.title }}</a>
+                            </li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                    {% endfor %}
                 </div>
-                <div class="report-card-name">{{ report.filename }}</div>
-                <div class="report-card-meta">{{ (report.size / 1024) | round(1) }} KB</div>
-            </a>
-            {% endfor %}
-        </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>该报告暂无可解析的新闻内容</p>
+                </div>
+                {% endif %}
+            </div>
+        </details>
+        {% endfor %}
     </div>
     {% endfor %}
 {% else %}
