@@ -7,7 +7,7 @@ import pytest
 
 from trendradar import utils
 from trendradar.html_report import (
-    _flatten_and_sort_news,
+    flatten_and_sort_news,
     _render_news_cards_html,
     render_html_content,
     generate_html_report,
@@ -47,7 +47,7 @@ class TestFlattenAndSortNews:
             {"word": "关键词A", "count": 1, "titles": [_title("标题1", [1])]},
             {"word": "关键词B", "count": 1, "titles": [_title("标题2", [2])]},
         ]
-        result = _flatten_and_sort_news(stats, _weight_config(), rank_threshold=5)
+        result = flatten_and_sort_news(stats, _weight_config(), rank_threshold=5)
         assert len(result) == 2
         assert {item["title"] for item in result} == {"标题1", "标题2"}
 
@@ -62,11 +62,11 @@ class TestFlattenAndSortNews:
                 ],
             }
         ]
-        result = _flatten_and_sort_news(stats, _weight_config(), rank_threshold=5)
+        result = flatten_and_sort_news(stats, _weight_config(), rank_threshold=5)
         assert [item["title"] for item in result] == ["高排名", "低排名"]
 
     def test_empty_stats_returns_empty_list(self):
-        result = _flatten_and_sort_news([], _weight_config(), rank_threshold=5)
+        result = flatten_and_sort_news([], _weight_config(), rank_threshold=5)
         assert result == []
 
     def test_group_with_no_titles_is_skipped(self):
@@ -74,7 +74,7 @@ class TestFlattenAndSortNews:
             {"word": "空组", "count": 0, "titles": []},
             {"word": "有内容", "count": 1, "titles": [_title("标题1", [1])]},
         ]
-        result = _flatten_and_sort_news(stats, _weight_config(), rank_threshold=5)
+        result = flatten_and_sort_news(stats, _weight_config(), rank_threshold=5)
         assert len(result) == 1
         assert result[0]["title"] == "标题1"
 

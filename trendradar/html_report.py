@@ -8,7 +8,7 @@ from trendradar.notifier import prepare_report_data
 from trendradar.utils import calculate_news_weight
 
 
-def _flatten_and_sort_news(
+def flatten_and_sort_news(
     stats: List[Dict[str, Any]],
     weight_config: Dict[str, float],
     rank_threshold: int,
@@ -604,7 +604,7 @@ def generate_html_report(
 
     report_data = prepare_report_data(config, stats, failed_ids, new_titles, id_to_name, mode)
 
-    news_list = _flatten_and_sort_news(
+    news_list = flatten_and_sort_news(
         report_data["stats"], config["WEIGHT_CONFIG"], config["RANK_THRESHOLD"]
     )
 
