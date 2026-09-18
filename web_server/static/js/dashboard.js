@@ -86,7 +86,7 @@
 document.getElementById('themeToggle')?.addEventListener('click', window.toggleTheme);
 
 // Read History Tracking
-// 点击任意新闻标题链接时，上报到后端，供概览页「最近阅读」展示
+// 点击任意新闻标题链接时，上报到后端（首页目前不单独展示这份记录，仅用于数据留存）
 (function () {
   document.addEventListener('click', function (e) {
     const link = e.target.closest('.report-news-link');
