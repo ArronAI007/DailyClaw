@@ -13,3 +13,6 @@ output/
 
 # brainstorming 可视化协作产物（本地临时文件）
 .superpowers/
+
+# AI 分类引擎的本地 SQLite 数据库
+data/
