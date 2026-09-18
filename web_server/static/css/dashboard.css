@@ -1216,11 +1216,6 @@ a:hover {
   font-size: 0.75rem;
 }
 
-.news-card-source {
-  color: var(--color-text-secondary);
-  font-weight: 500;
-}
-
 .news-card-rank {
   color: #fff;
   background: #6b7280;

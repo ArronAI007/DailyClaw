@@ -31,7 +31,6 @@
         <div class="news-card-number">{{ (loop.index0 % cards_per_batch) + 1 if cards_per_batch > 0 else loop.index }}</div>
         <div class="news-card-content">
             <div class="news-card-header">
-                <span class="news-card-source">{{ item.source_name }}</span>
                 {% if item.ranks %}
                 {% set min_rank = item.ranks | min %}
                 {% set max_rank = item.ranks | max %}
