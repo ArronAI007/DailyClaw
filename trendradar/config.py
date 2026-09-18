@@ -207,9 +207,9 @@ def load_config():
         "BARK_BATCH_SIZE": config_data["notification"].get("bark_batch_size", 3600),
         "SLACK_BATCH_SIZE": config_data["notification"].get("slack_batch_size", 4000),
         "BATCH_SEND_INTERVAL": config_data["notification"]["batch_send_interval"],
-        "FEISHU_MESSAGE_SEPARATOR": config_data["notification"][
-            "feishu_message_separator"
-        ],
+        "FEISHU_MESSAGE_SEPARATOR": config_data["notification"].get(
+            "feishu_message_separator", "━━━━━━━━━━━━━━━━━━━"
+        ),
         # 多账号配置
         "MAX_ACCOUNTS_PER_CHANNEL": int(
             os.environ.get("MAX_ACCOUNTS_PER_CHANNEL", "").strip() or "0"

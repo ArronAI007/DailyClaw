@@ -19,6 +19,7 @@ notification:
   message_batch_size: 4000
   batch_send_interval: 3
   max_accounts_per_channel: 3
+  feishu_message_separator: "━━━━━━━━━━━━━━━━━━━"
   push_window:
     enabled: false
     time_range:
