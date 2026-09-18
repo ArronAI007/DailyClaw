@@ -8,5 +8,5 @@ __pycache__/
 .mypy_cache/
 htmlcov/
 
-# 个人阅读记录（本地浏览历史，不应提交到仓库）
-output/.read_history/
+# 爬取数据输出（本地生成，不应提交到仓库）
+output/
