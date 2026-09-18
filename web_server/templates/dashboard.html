@@ -1,203 +1,104 @@
 {% extends "base.html" %}
 
 {% set active_page = "dashboard" %}
-{% block title %}概览 - DailyClaw{% endblock %}
-{% block page_title %}概览{% endblock %}
+{% block title %}首页 - DailyClaw{% endblock %}
+{% block page_title %}首页{% endblock %}
 
 {% block content %}
-<!-- 快捷操作栏 -->
-<div class="action-bar">
-    <button class="btn btn-primary" id="btnCrawl" onclick="triggerCrawl()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<div class="news-toolbar">
+    <div class="news-toolbar-status">
+        <span class="status-dot {{ 'ok' if status.health == 'healthy' else 'warn' }}"></span>
+        <span>{{ '正常' if status.health == 'healthy' else status.health }}</span>
+        <span class="news-toolbar-sep">·</span>
+        <span>{{ status.data.total_storage or '0 MB' }}</span>
+        <span class="news-toolbar-sep">·</span>
+        <span>今日 {{ news_list | length }} 条新闻</span>
+    </div>
+    <button class="btn btn-primary btn-sm" id="btnCrawl" onclick="triggerCrawl()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M23 4v6h-6M1 20v-6h6"/>
             <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
         </svg>
         手动爬取
     </button>
-    <a href="/reports/latest" class="btn btn-secondary">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
-        </svg>
-        最新报告
-    </a>
 </div>
 
-<!-- 状态卡片网格 -->
-<div class="stats-grid">
-    <!-- 系统状态 -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
-                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                </svg>
-                系统状态
-            </div>
+<div class="card platform-status-card">
+    <div class="card-header">
+        <div class="card-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                <line x1="8" y1="21" x2="16" y2="21"/>
+                <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            平台状态
         </div>
-        <div class="card-body">
-            <div class="status-grid">
-                <div class="status-item">
-                    <div class="status-label">版本</div>
-                    <div class="status-value">{{ status.system.version }}</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">健康状态</div>
-                    <div class="status-value">
-                        <span class="status-dot {{ 'ok' if status.health == 'healthy' else 'warn' }}"></span>
-                        {{ '正常' if status.health == 'healthy' else status.health }}
-                    </div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">数据存储</div>
-                    <div class="status-value">{{ status.data.total_storage or '0 MB' }}</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">最新记录</div>
-                    <div class="status-value">{{ status.data.latest_record or '无' }}</div>
-                </div>
-            </div>
-        </div>
+        <span class="card-badge">{{ platforms | selectattr('active') | list | length }}/{{ platforms | length }}</span>
     </div>
-
-    <!-- 今日统计 -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
-                    <line x1="18" y1="20" x2="18" y2="10"/>
-                    <line x1="12" y1="20" x2="12" y2="4"/>
-                    <line x1="6" y1="20" x2="6" y2="14"/>
-                </svg>
-                今日统计
+    <div class="card-body">
+        <div class="platform-list">
+            {% for platform in platforms %}
+            <div class="platform-item">
+                <span class="platform-dot {{ 'active' if platform.active else 'inactive' }}"></span>
+                <span class="platform-name">{{ platform.name }}</span>
             </div>
-        </div>
-        <div class="card-body">
-            <div class="metric-large">{{ total_news_today }}</div>
-            <div class="metric-label">条新闻已采集</div>
-            <div class="metric-sub">覆盖 {{ platforms | length }} 个平台</div>
-        </div>
-    </div>
-
-    <!-- 平台状态 -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                    <line x1="8" y1="21" x2="16" y2="21"/>
-                    <line x1="12" y1="17" x2="12" y2="21"/>
-                </svg>
-                平台状态
-            </div>
-            <span class="card-badge">{{ platforms | selectattr('active') | list | length }}/{{ platforms | length }}</span>
-        </div>
-        <div class="card-body">
-            <div class="platform-list">
-                {% for platform in platforms %}
-                <div class="platform-item">
-                    <span class="platform-dot {{ 'active' if platform.active else 'inactive' }}"></span>
-                    <span class="platform-name">{{ platform.name }}</span>
-                </div>
-                {% endfor %}
-            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
 
-<!-- 列表卡片网格：热门关注词 + 最近报告 -->
-<div class="lists-grid">
-    <!-- 趋势话题 -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
-                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                    <polyline points="17 6 23 6 23 12"/>
-                </svg>
-                热门关注词
+{% if news_list %}
+<div class="news-grid" id="newsGrid" data-total-batches="{{ total_batches }}">
+    {% for item in news_list %}
+    {% set batch_index = loop.index0 // cards_per_batch if cards_per_batch > 0 else 0 %}
+    <div class="news-card{{ ' new' if item.is_new else '' }}" data-batch="{{ batch_index }}"{% if batch_index != 0 %} style="display:none"{% endif %}>
+        <div class="news-card-number">{{ (loop.index0 % cards_per_batch) + 1 if cards_per_batch > 0 else loop.index }}</div>
+        <div class="news-card-content">
+            <div class="news-card-header">
+                <span class="news-card-source">{{ item.source_name }}</span>
+                {% if item.ranks %}
+                {% set min_rank = item.ranks | min %}
+                {% set max_rank = item.ranks | max %}
+                {% set rank_class = 'top' if min_rank <= 3 else ('high' if min_rank <= item.rank_threshold else '') %}
+                <span class="news-card-rank {{ rank_class }}">{{ min_rank if min_rank == max_rank else min_rank ~ '-' ~ max_rank }}</span>
+                {% endif %}
+                {% if item.time_display %}
+                <span class="news-card-time">{{ item.time_display | replace(" ~ ", "~") | replace("[", "") | replace("]", "") }}</span>
+                {% endif %}
+                {% if item.count and item.count > 1 %}
+                <span class="news-card-count">{{ item.count }}次</span>
+                {% endif %}
             </div>
-            <a href="/config#keywords" class="card-link">查看全部</a>
-        </div>
-        <div class="card-body">
-            {% if trending_topics %}
-            <div class="topic-list">
-                {% for topic in trending_topics %}
-                <div class="topic-item">
-                    <div class="topic-info">
-                        <span class="topic-rank">{{ loop.index }}</span>
-                        <span class="topic-name">{{ topic.keyword }}</span>
-                    </div>
-                    <div class="topic-meta">
-                        <span class="topic-count">{{ topic.frequency }} 次</span>
-                        <span class="topic-trend {{ topic.trend }}">
-                            {% if topic.trend == 'rising' %}
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                            </svg>
-                            {% elif topic.trend == 'falling' %}
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
-                            </svg>
-                            {% else %}
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="5" y1="12" x2="19" y2="12"/>
-                            </svg>
-                            {% endif %}
-                        </span>
-                    </div>
-                </div>
-                {% endfor %}
+            <div class="news-card-title">
+                {% set link_url = item.mobile_url or item.url %}
+                {% if link_url %}
+                <a href="{{ link_url }}" target="_blank" rel="noopener noreferrer" class="report-news-link" data-title="{{ item.title }}" data-platform="{{ item.source_name }}">{{ item.title }}</a>
+                {% else %}
+                {{ item.title }}
+                {% endif %}
             </div>
-            {% else %}
-            <div class="empty-state">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 16v-4M12 8h.01"/>
-                </svg>
-                <p>暂无趋势数据，请先执行爬取</p>
-            </div>
-            {% endif %}
         </div>
     </div>
-
-    <!-- 最近阅读 -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                </svg>
-                最近阅读
-            </div>
-            <a href="/reports" class="card-link">浏览新闻</a>
-        </div>
-        <div class="card-body">
-            {% if read_history %}
-            <div class="read-history-list">
-                {% for item in read_history %}
-                <div class="read-history-item">
-                    <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" class="report-news-link" data-title="{{ item.title }}" data-platform="{{ item.platform }}">{{ item.title }}</a>
-                    <div class="read-history-meta">
-                        {% if item.platform %}<span>{{ item.platform }}</span><span>·</span>{% endif %}
-                        <span>{{ item.time_ago }}</span>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="empty-state">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                </svg>
-                <p>暂无阅读记录，去「报告」页点开一条新闻试试</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
+    {% endfor %}
 </div>
+
+{% if total_batches > 1 %}
+<div class="batch-controls">
+    <button class="btn btn-primary" onclick="showNextNewsBatch()">换一批</button>
+    <span class="batch-indicator">第 <span id="currentNewsBatchNum">1</span> / 共 {{ total_batches }} 批</span>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state empty-state-large">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+    </svg>
+    <h3>今天还没有新闻数据</h3>
+    <p>点击右上角"手动爬取"抓取今天的第一批数据</p>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -207,7 +108,7 @@ async function triggerCrawl() {
     const originalText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
             <path d="M23 4v6h-6M1 20v-6h6"/>
             <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
         </svg>
@@ -224,38 +125,26 @@ async function triggerCrawl() {
 
         if (data.success) {
             btn.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="20 6 9 17 4 12"/>
                 </svg>
                 完成 (${data.total_news}条)
             `;
             setTimeout(() => location.reload(), 1500);
         } else {
-            btn.innerHTML = `
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="15" y1="9" x2="9" y2="15"/>
-                    <line x1="9" y1="9" x2="15" y2="15"/>
-                </svg>
-                失败
-            `;
+            btn.innerHTML = originalText;
             alert('爬取失败: ' + (data.error?.message || '未知错误'));
         }
     } catch (e) {
-        btn.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="15" y1="9" x2="9" y2="15"/>
-                <line x1="9" y1="9" x2="15" y2="15"/>
-            </svg>
-            错误
-        `;
+        btn.innerHTML = originalText;
         alert('请求失败: ' + e.message);
     }
 
     setTimeout(() => {
         btn.disabled = false;
-        btn.innerHTML = originalText;
+        if (btn.innerHTML.indexOf('完成') === -1) {
+            btn.innerHTML = originalText;
+        }
     }, 3000);
 }
 </script>

@@ -28,6 +28,7 @@ from trendradar.logging_config import get_logger
 from trendradar.config import VERSION
 from trendradar.utils import get_beijing_time
 from web_server.config_manager import ConfigManager
+from web_server.news_service import get_today_news_cards
 
 logger = get_logger(__name__)
 
@@ -329,7 +330,7 @@ def add_read_history(title: str, url: str, platform: str) -> None:
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    """Dashboard 概览页"""
+    """Dashboard 概览页：今日新闻卡片流"""
     try:
         system_tools = get_system_tools()
         status = system_tools.get_system_status()
@@ -337,42 +338,23 @@ async def dashboard(request: Request):
         logger.exception(f"获取系统状态失败: {e}")
         status = {"system": {"version": VERSION}, "data": {}, "health": "unknown"}
 
-    # 获取最新新闻统计：取最近一次采集报告的实际条数，
-    # 而不是严格按自然日"今天"过滤——避免刚过零点、
-    # 当天还没有新采集数据时统计错误地显示为 0
-    try:
-        latest_reports = get_report_list()
-        if latest_reports:
-            latest_groups = parse_news_txt(latest_reports[0]["txt_path"])
-            total_news_today = sum(len(g["news_items"]) for g in latest_groups)
-        else:
-            total_news_today = 0
-    except Exception as e:
-        logger.exception(f"获取最新新闻统计失败: {e}")
-        total_news_today = 0
-
-    # 获取趋势话题（基于最近一次采集报告，同样不卡"今天"这个硬边界）
-    try:
-        trending_topics = get_trending_topics_from_latest_report(top_n=5)
-    except Exception as e:
-        logger.exception(f"获取趋势话题失败: {e}")
-        trending_topics = []
-
     # 平台状态
     platforms = get_platform_status()
 
-    # 最近阅读过的新闻
-    read_history = load_read_history()[:8]
-    for item in read_history:
-        item["time_ago"] = format_relative_time(item.get("read_at", ""))
+    # 今日新闻卡片（跟真实报告同一条计算链路：关键词过滤 + 权重排序）
+    try:
+        news_list, cards_per_batch, total_batches = get_today_news_cards()
+    except Exception as e:
+        logger.exception(f"获取今日新闻失败: {e}")
+        news_list, cards_per_batch, total_batches = [], 12, 0
 
     return templates.TemplateResponse(request, "dashboard.html", {
         "version": VERSION,
         "status": status,
-        "total_news_today": total_news_today,
-        "trending_topics": trending_topics,
         "platforms": platforms,
-        "read_history": read_history,
+        "news_list": news_list,
+        "cards_per_batch": cards_per_batch,
+        "total_batches": total_batches,
     })
 
 
