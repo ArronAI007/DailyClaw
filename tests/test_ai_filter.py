@@ -76,6 +76,12 @@ class TestExtractTags:
             tags = ai_filter.extract_tags("我关注科技新闻")
         assert tags == []
 
+    def test_filters_tags_missing_tag_field(self, ai_filter):
+        response = '```json\n{"tags": [{"description": "no tag field"}, {"tag": "valid", "description": "ok"}]}\n```'
+        with patch.object(ai_filter.client, "chat", return_value=response):
+            tags = ai_filter.extract_tags("兴趣描述")
+        assert tags == [{"tag": "valid", "description": "ok"}]
+
 
 class TestUpdateTags:
     def test_parses_valid_response(self, ai_filter):
@@ -99,6 +105,11 @@ class TestUpdateTags:
 
     def test_invalid_json_returns_none(self, ai_filter):
         with patch.object(ai_filter.client, "chat", return_value="not json"):
+            result = ai_filter.update_tags([], "兴趣描述")
+        assert result is None
+
+    def test_client_exception_returns_none(self, ai_filter):
+        with patch.object(ai_filter.client, "chat", side_effect=RuntimeError("timeout")):
             result = ai_filter.update_tags([], "兴趣描述")
         assert result is None
 
@@ -140,6 +151,13 @@ class TestClassifyBatch:
         results = ai_filter.classify_batch([], tags, "兴趣描述")
         assert results is None
 
+    def test_client_exception_returns_none(self, ai_filter):
+        titles = [{"id": 1, "title": "标题"}]
+        tags = [{"id": 101, "tag": "科技", "description": ""}]
+        with patch.object(ai_filter.client, "chat", side_effect=RuntimeError("timeout")):
+            results = ai_filter.classify_batch(titles, tags, "兴趣描述")
+        assert results is None
+
 
 class TestLoadInterestsContentFromRealFile:
     def test_reads_real_project_file(self):
@@ -147,3 +165,20 @@ class TestLoadInterestsContentFromRealFile:
         content = AIFilter({}, {}).load_interests_content()
         assert content
         assert "科技" in content
+
+
+class TestExtractJson:
+    def test_extracts_from_json_fence(self):
+        response = '```json\n{"key": "value"}\n```'
+        assert AIFilter._extract_json(response) == '{"key": "value"}'
+
+    def test_extracts_from_bare_fence(self):
+        response = '```\n{"key": "value"}\n```'
+        assert AIFilter._extract_json(response) == '{"key": "value"}'
+
+    def test_fallback_to_raw_when_no_fence(self):
+        response = '{"key": "value"}'
+        assert AIFilter._extract_json(response) == '{"key": "value"}'
+
+    def test_empty_response_returns_empty_string(self):
+        assert AIFilter._extract_json("") == ""

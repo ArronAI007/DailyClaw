@@ -15,6 +15,9 @@ from typing import Any, Dict, List, Optional
 
 from trendradar.ai.client import AIClient
 from trendradar.ai.prompt_loader import load_prompt_template
+from trendradar.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class AIFilter:
@@ -70,7 +73,8 @@ class AIFilter:
 
         try:
             response = self.client.chat(messages)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"AI 标签提取调用失败: {e}")
             return []
 
         return self._parse_tags_response(response)
@@ -95,7 +99,8 @@ class AIFilter:
 
         try:
             response = self.client.chat(messages)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"AI 标签更新调用失败: {e}")
             return None
 
         json_str = self._extract_json(response)
@@ -156,7 +161,8 @@ class AIFilter:
 
         try:
             response = self.client.chat(messages)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"AI 批量分类调用失败: {e}")
             return None
 
         json_str = self._extract_json(response)
