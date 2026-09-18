@@ -33,6 +33,12 @@
   `stats[].titles` 里（每条都带 `is_new` 标记），该区块只是按平台重新分组、再展示一次
   同一批数据，属于冗余展示。摊平后用卡片上的 NEW 角标替代，不再需要单独区块。
   incremental 模式下本来就不显示该区块（`hide_new_section = True`），行为不变。
+- **`MAX_NEWS_PER_KEYWORD` 不会被摊平逻辑复用**：它的截断已经在 `count_word_frequency`
+  内部按**关键词组**生效（`group_max_count = group_key_to_max_count.get(group_key, 0) or
+  CONFIG["MAX_NEWS_PER_KEYWORD"]`，每组截断后才 append 进 `stats`），这段逻辑本次不修改。
+  如果摊平阶段再用同一个配置当"报告总条数上限"，会让同一个配置项在"每组几条"和"全局几条"
+  两个语义之间冲突，且静默改变现有用户的配置含义。摊平后的总条数就是各组截断结果之和，
+  完全由已有分组逻辑决定；"换一批"负责控制单屏展示量，不需要再叠加一层总量上限。
 
 ## 架构改动
 
@@ -50,6 +56,11 @@
    迁移到 `trendradar/utils.py`，行为不变，只是换个文件。`main.py: count_word_frequency`
    和新的 `trendradar/html_report.py` 都从 `trendradar.utils` 导入它，避免
    `trendradar/html_report.py` 反向 import `main.py` 造成循环依赖。
+   迁移时顺带去掉它对 main.py 全局 `CONFIG` 的隐式依赖：`weight_config` 从函数内部读
+   `CONFIG["WEIGHT_CONFIG"]` 改为显式必填参数（`rank_threshold` 本来就已经是显式参数，
+   唯一调用点 `main.py` 也一直显式传值，这个改动不影响现有调用方式，只是让 `weight_config`
+   同样显式化）。`tests/test_main.py` 里现有的 `TestCalculateNewsWeight` 测试类整体搬到
+   `tests/test_utils.py`，改为从 `trendradar.utils` 导入并显式传入 `weight_config`。
 
 ## 数据流
 
@@ -62,8 +73,6 @@ main.py: _run_analysis_pipeline
   │         ├─ 摊平：合并 report_data["stats"] 里所有分组的 titles 为一个列表
   │         │        （不再使用 report_data["new_titles"]，避免重复展示）
   │         ├─ 排序：按 calculate_news_weight 全局重排
-  │         ├─ 截断：应用 CONFIG["MAX_NEWS_PER_KEYWORD"]（>0 时限制总条数，语义从
-  │         │        "每关键词组上限"变为"报告总条数上限"）
   │         └─ 渲染：卡片网格 + 分批 JS，写入 HTML 文件
   └─ send_to_notifications(stats, ...) # 不变：推送消息路径完全不受影响
 ```
@@ -126,14 +135,14 @@ main.py: _run_analysis_pipeline
 |---|---|---|
 | `report.cards_per_batch` | `config/config.yaml` | 新增，默认 12 |
 | `CARDS_PER_BATCH` | 环境变量 | 新增，覆盖上面的配置 |
-| `MAX_NEWS_PER_KEYWORD` | 既有 | 语义从"每关键词组上限"变为"报告总条数上限" |
+| `MAX_NEWS_PER_KEYWORD` | 既有 | 含义不变（仍是 `count_word_frequency` 里每关键词组的截断上限） |
 | `REVERSE_CONTENT_ORDER` | 既有 | 不再影响 HTML 报告展示顺序，仅影响推送消息 |
 
 ## 测试与验证
 
 - 现有单元测试中，与 `count_word_frequency`、`prepare_report_data`、通知格式相关的测试不应受影响。
 - 需要为新的摊平排序 + 分批渲染逻辑补充测试（覆盖：多分组摊平后的排序结果、
-  `MAX_NEWS_PER_KEYWORD` 截断、`cards_per_batch` 配置读取、不足一批时不生成"换一批"按钮的分支）。
+  `cards_per_batch` 配置读取、不足一批时不生成"换一批"按钮的分支）。
 - 手动验证：本地跑一次 `main.py`（或用已有测试数据）生成 `output/<日期>/html/*.html`，
   用浏览器打开检查卡片网格在桌面宽度和手机宽度（≤480px）下的呈现、"换一批"分批与循环、
   "保存为图片"仍可用。
