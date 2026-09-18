@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from mcp_server.services.cache_service import get_cache
 from mcp_server.services.data_service import DataService
 from mcp_server.tools.system import SystemManagementTools
 from trendradar.logging_config import get_logger
@@ -438,6 +439,12 @@ async def api_crawl(request: CrawlRequest):
         platforms=request.platforms,
         save_to_local=request.save_to_local
     )
+
+    # 手动爬取写入了新的 output 数据时，清掉共享缓存（包括首页新闻卡片的 5
+    # 分钟缓存），避免爬取成功后页面自动刷新却仍然显示爬取前缓存的旧结果
+    if result.get("success") and result.get("saved_to_local"):
+        get_cache().clear()
+
     return result
 
 
