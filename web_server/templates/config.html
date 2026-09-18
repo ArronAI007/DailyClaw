@@ -67,6 +67,10 @@
                     <input type="number" name="max_news_per_keyword" value="{{ config.max_news_per_keyword or 0 }}" min="0" placeholder="0=不限制">
                 </div>
                 <div class="form-group">
+                    <label>报告每批展示数量</label>
+                    <input type="number" name="cards_per_batch" value="{{ config.cards_per_batch or 12 }}" min="1" max="100">
+                </div>
+                <div class="form-group">
                     <label>按位置优先排序</label>
                     <label class="switch">
                         <input type="checkbox" name="sort_by_position_first" {% if config.sort_by_position_first %}checked{% endif %}>
@@ -447,6 +451,7 @@ async function saveConfig() {
         rank_threshold: parseInt(form.querySelector('[name="rank_threshold"]').value) || 5,
         sort_by_position_first: form.querySelector('[name="sort_by_position_first"]')?.checked ?? false,
         max_news_per_keyword: parseInt(form.querySelector('[name="max_news_per_keyword"]').value) || 0,
+        cards_per_batch: parseInt(form.querySelector('[name="cards_per_batch"]').value) || 12,
         reverse_content_order: form.querySelector('[name="reverse_content_order"]')?.checked ?? false,
         enable_notification: form.querySelector('[name="enable_notification"]')?.checked ?? true,
         message_batch_size: parseInt(form.querySelector('[name="message_batch_size"]').value) || 4000,

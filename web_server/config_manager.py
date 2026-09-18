@@ -177,6 +177,7 @@ class ConfigManager:
             "rank_threshold": config.get("report", {}).get("rank_threshold", 5),
             "sort_by_position_first": config.get("report", {}).get("sort_by_position_first", False),
             "max_news_per_keyword": config.get("report", {}).get("max_news_per_keyword", 0),
+            "cards_per_batch": config.get("report", {}).get("cards_per_batch", 12),
             "reverse_content_order": config.get("report", {}).get("reverse_content_order", False),
             "enable_notification": config.get("notification", {}).get("enable_notification", True),
             "message_batch_size": config.get("notification", {}).get("message_batch_size", 4000),
@@ -222,6 +223,7 @@ class ConfigManager:
                     "rank_threshold": int(form_data.get("rank_threshold", 5)),
                     "sort_by_position_first": form_data.get("sort_by_position_first", False),
                     "max_news_per_keyword": int(form_data.get("max_news_per_keyword", 0)),
+                    "cards_per_batch": int(form_data.get("cards_per_batch", 12)),
                     "reverse_content_order": form_data.get("reverse_content_order", False),
                 },
                 "notification": {
