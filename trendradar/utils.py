@@ -269,6 +269,41 @@ def load_frequency_words(
     return processed_groups, filter_words, global_filters
 
 
+def calculate_news_weight(
+    title_data: Dict[str, Any], weight_config: Dict[str, float], rank_threshold: int
+) -> float:
+    """计算新闻权重，用于排序"""
+    ranks = title_data.get("ranks", [])
+    if not ranks:
+        return 0.0
+
+    count = title_data.get("count", len(ranks))
+
+    # 排名权重：Σ(11 - min(rank, 10)) / 出现次数
+    rank_scores = []
+    for rank in ranks:
+        score = 11 - min(rank, 10)
+        rank_scores.append(score)
+
+    rank_weight = sum(rank_scores) / len(ranks) if ranks else 0
+
+    # 频次权重：min(出现次数, 10) × 10
+    frequency_weight = min(count, 10) * 10
+
+    # 热度加成：高排名次数 / 总出现次数 × 100
+    high_rank_count = sum(1 for rank in ranks if rank <= rank_threshold)
+    hotness_ratio = high_rank_count / len(ranks) if ranks else 0
+    hotness_weight = hotness_ratio * 100
+
+    total_weight = (
+        rank_weight * weight_config["RANK_WEIGHT"]
+        + frequency_weight * weight_config["FREQUENCY_WEIGHT"]
+        + hotness_weight * weight_config["HOTNESS_WEIGHT"]
+    )
+
+    return total_weight
+
+
 def format_rank_display(ranks: List[int], rank_threshold: int, format_type: str) -> str:
     """统一的排名格式化方法"""
     if not ranks:

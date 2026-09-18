@@ -11,7 +11,7 @@ from trendradar import utils
 from trendradar.records import PushRecordManager
 from trendradar.fetcher import DataFetcher
 from trendradar.notifier import send_to_notifications, prepare_report_data
-from trendradar.utils import load_frequency_words, matches_word_groups
+from trendradar.utils import load_frequency_words, matches_word_groups, calculate_news_weight
 from trendradar.logging_config import configure_logging, get_logger
 
 configure_logging()
@@ -320,43 +320,6 @@ def detect_latest_new_titles(current_platform_ids: Optional[List[str]] = None) -
             new_titles[source_id] = source_new_titles
 
     return new_titles
-
-
-# === 统计和分析 ===
-def calculate_news_weight(
-    title_data: Dict, rank_threshold: int = CONFIG["RANK_THRESHOLD"]
-) -> float:
-    """计算新闻权重，用于排序"""
-    ranks = title_data.get("ranks", [])
-    if not ranks:
-        return 0.0
-
-    count = title_data.get("count", len(ranks))
-    weight_config = CONFIG["WEIGHT_CONFIG"]
-
-    # 排名权重：Σ(11 - min(rank, 10)) / 出现次数
-    rank_scores = []
-    for rank in ranks:
-        score = 11 - min(rank, 10)
-        rank_scores.append(score)
-
-    rank_weight = sum(rank_scores) / len(ranks) if ranks else 0
-
-    # 频次权重：min(出现次数, 10) × 10
-    frequency_weight = min(count, 10) * 10
-
-    # 热度加成：高排名次数 / 总出现次数 × 100
-    high_rank_count = sum(1 for rank in ranks if rank <= rank_threshold)
-    hotness_ratio = high_rank_count / len(ranks) if ranks else 0
-    hotness_weight = hotness_ratio * 100
-
-    total_weight = (
-        rank_weight * weight_config["RANK_WEIGHT"]
-        + frequency_weight * weight_config["FREQUENCY_WEIGHT"]
-        + hotness_weight * weight_config["HOTNESS_WEIGHT"]
-    )
-
-    return total_weight
 
 
 def format_time_display(first_time: str, last_time: str) -> str:
@@ -708,7 +671,7 @@ def count_word_frequency(
         sorted_titles = sorted(
             all_titles,
             key=lambda x: (
-                -calculate_news_weight(x, rank_threshold),
+                -calculate_news_weight(x, CONFIG["WEIGHT_CONFIG"], rank_threshold),
                 min(x["ranks"]) if x["ranks"] else 999,
                 -x["count"],
             ),

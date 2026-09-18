@@ -81,37 +81,6 @@ class TestParseFileTitles:
         assert titles_by_id["zhihu"]["invalid line without rank"]["ranks"] == [1]
 
 
-class TestCalculateNewsWeight:
-    def test_basic_rank_weight(self):
-        data = {"ranks": [1], "count": 1}
-        weight = main.calculate_news_weight(data, rank_threshold=5)
-        assert weight > 0
-
-    def test_multiple_ranks_average(self):
-        data = {"ranks": [1, 2], "count": 2}
-        weight1 = main.calculate_news_weight(data, rank_threshold=5)
-        data2 = {"ranks": [5, 6], "count": 2}
-        weight2 = main.calculate_news_weight(data2, rank_threshold=5)
-        assert weight1 > weight2
-
-    def test_frequency_weight(self):
-        data = {"ranks": [1], "count": 5}
-        weight = main.calculate_news_weight(data, rank_threshold=5)
-        assert weight > 0
-
-    def test_hotness_weight(self):
-        data = {"ranks": [1, 2, 3], "count": 3}
-        weight_high = main.calculate_news_weight(data, rank_threshold=5)
-        data2 = {"ranks": [8, 9, 10], "count": 3}
-        weight_low = main.calculate_news_weight(data2, rank_threshold=5)
-        assert weight_high > weight_low
-
-    def test_empty_ranks(self):
-        data = {"ranks": [], "count": 1}
-        weight = main.calculate_news_weight(data, rank_threshold=5)
-        assert weight == 0.0
-
-
 class TestFormatTimeDisplay:
     def test_same_time(self):
         assert main.format_time_display("10:00", "10:00") == "10:00"

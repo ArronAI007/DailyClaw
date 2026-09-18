@@ -14,6 +14,7 @@ from trendradar.utils import (
     matches_word_groups,
     format_rank_display,
     format_title_for_platform,
+    calculate_news_weight,
     load_frequency_words,
     ensure_directory_exists,
     get_output_path,
@@ -263,3 +264,37 @@ class TestGetOutputPath:
             path = get_output_path("txt", "test.txt")
             assert path.endswith("test.txt")
             assert "txt" in path
+
+
+class TestCalculateNewsWeight:
+    def _weight_config(self):
+        return {"RANK_WEIGHT": 0.6, "FREQUENCY_WEIGHT": 0.3, "HOTNESS_WEIGHT": 0.1}
+
+    def test_basic_rank_weight(self):
+        data = {"ranks": [1], "count": 1}
+        weight = calculate_news_weight(data, self._weight_config(), rank_threshold=5)
+        assert weight > 0
+
+    def test_multiple_ranks_average(self):
+        data = {"ranks": [1, 2], "count": 2}
+        weight1 = calculate_news_weight(data, self._weight_config(), rank_threshold=5)
+        data2 = {"ranks": [5, 6], "count": 2}
+        weight2 = calculate_news_weight(data2, self._weight_config(), rank_threshold=5)
+        assert weight1 > weight2
+
+    def test_frequency_weight(self):
+        data = {"ranks": [1], "count": 5}
+        weight = calculate_news_weight(data, self._weight_config(), rank_threshold=5)
+        assert weight > 0
+
+    def test_hotness_weight(self):
+        data = {"ranks": [1, 2, 3], "count": 3}
+        weight_high = calculate_news_weight(data, self._weight_config(), rank_threshold=5)
+        data2 = {"ranks": [8, 9, 10], "count": 3}
+        weight_low = calculate_news_weight(data2, self._weight_config(), rank_threshold=5)
+        assert weight_high > weight_low
+
+    def test_empty_ranks(self):
+        data = {"ranks": [], "count": 1}
+        weight = calculate_news_weight(data, self._weight_config(), rank_threshold=5)
+        assert weight == 0.0
