@@ -206,3 +206,50 @@ class TestAIFilterPipelineRun:
 
         titles_in_result = [t["title"] for group in result.stats for t in group["titles"]]
         assert titles_in_result == ["高相关新闻"]
+
+    def test_failed_batch_titles_are_not_marked_analyzed(self, store):
+        mock_filter = MagicMock()
+        mock_filter.load_interests_content.return_value = "我关注科技"
+        mock_filter.compute_interests_hash.return_value = "ai_interests.txt:hash1"
+        mock_filter.extract_tags.return_value = [{"tag": "科技", "description": ""}]
+        mock_filter.classify_batch.return_value = None
+
+        pipeline = _make_pipeline(store, mock_filter)
+        result = pipeline.run([_title_entry("分类失败的新闻")])
+
+        assert result.success is True
+        assert result.stats == []
+        assert store.get_analyzed_title_hashes() == set()
+        assert store.get_active_ai_filter_results() == []
+
+    def test_multiple_batches_are_all_processed(self, store):
+        mock_filter = MagicMock()
+        mock_filter.load_interests_content.return_value = "我关注科技"
+        mock_filter.compute_interests_hash.return_value = "ai_interests.txt:hash1"
+        mock_filter.extract_tags.return_value = [{"tag": "科技", "description": ""}]
+
+        call_batches = []
+
+        def fake_classify(titles_for_ai, active_tags, interests_content):
+            call_batches.append([t["title"] for t in titles_for_ai])
+            tag_id = active_tags[0]["id"]
+            return [
+                {"title": item["title"], "tag": "科技", "tag_id": tag_id, "relevance_score": 0.9}
+                for item in titles_for_ai
+            ]
+
+        mock_filter.classify_batch.side_effect = fake_classify
+
+        pipeline = _make_pipeline(
+            store,
+            mock_filter,
+            filter_config={"BATCH_SIZE": 1, "BATCH_INTERVAL": 0, "MIN_SCORE": 0.0, "RECLASSIFY_THRESHOLD": 0.6},
+        )
+        all_titles = [_title_entry("新闻一"), _title_entry("新闻二"), _title_entry("新闻三")]
+
+        result = pipeline.run(all_titles)
+
+        assert call_batches == [["新闻一"], ["新闻二"], ["新闻三"]]
+        assert result.stats[0]["count"] == 3
+        titles_in_result = sorted(t["title"] for t in result.stats[0]["titles"])
+        assert titles_in_result == ["新闻一", "新闻三", "新闻二"]

@@ -6,7 +6,10 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from trendradar.ai.filter import AIFilter
+from trendradar.logging_config import get_logger
 from trendradar.storage.ai_filter_store import AIFilterStore, title_hash
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -146,10 +149,11 @@ class AIFilterPipeline:
             titles_for_ai = [{"id": idx, "title": t["title"]} for idx, t in enumerate(batch, start=1)]
             batch_results = self.ai_filter.classify_batch(titles_for_ai, active_tags, interests_content)
 
-            batch_hashes = [title_hash(t["title"]) for t in batch]
             if batch_results is None:
+                logger.warning(f"AI 批次分类失败，本批 {len(batch)} 条标题将在下次运行重试")
                 continue
 
+            batch_hashes = [title_hash(t["title"]) for t in batch]
             title_to_hash = {t["title"]: title_hash(t["title"]) for t in batch}
             matched_titles = {r["title"] for r in batch_results}
             matched_hashes = {title_to_hash[t] for t in matched_titles if t in title_to_hash}
