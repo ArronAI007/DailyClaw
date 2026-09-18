@@ -74,6 +74,7 @@ a = Analysis(
         'trendradar.notifier.ntfy',
         'trendradar.records',
         'trendradar.utils',
+        'trendradar.html_report',
         'trendradar.logging_config',
     ],
     hookspath=[],
