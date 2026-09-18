@@ -182,6 +182,24 @@ class TestLoadConfig:
             config = load_config()
             assert config["AI"]["API_KEY"] == "env-secret"
 
+    def test_env_override_ai_model(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config.yaml"
+            config_path.write_text(yaml.safe_dump(self._make_config_data()), encoding="utf-8")
+            monkeypatch.setenv("CONFIG_PATH", str(config_path))
+            monkeypatch.setenv("AI_MODEL", "openai/gpt-4o-mini")
+            config = load_config()
+            assert config["AI"]["MODEL"] == "openai/gpt-4o-mini"
+
+    def test_env_override_ai_timeout(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config.yaml"
+            config_path.write_text(yaml.safe_dump(self._make_config_data()), encoding="utf-8")
+            monkeypatch.setenv("CONFIG_PATH", str(config_path))
+            monkeypatch.setenv("AI_TIMEOUT", "60")
+            config = load_config()
+            assert config["AI"]["TIMEOUT"] == 60
+
     def test_ai_filter_config_defaults(self, monkeypatch):
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path = Path(tmpdir) / "config.yaml"
