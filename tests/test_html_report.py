@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 import pytest
 
+from trendradar import utils
 from trendradar.html_report import (
     _flatten_and_sort_news,
     _render_news_cards_html,
@@ -17,16 +18,25 @@ def _weight_config() -> Dict[str, float]:
     return {"RANK_WEIGHT": 0.6, "FREQUENCY_WEIGHT": 0.3, "HOTNESS_WEIGHT": 0.1}
 
 
-def _title(title: str, ranks: List[int], count: int = 1, is_new: bool = False) -> Dict[str, Any]:
+def _title(
+    title: str,
+    ranks: List[int],
+    count: int = 1,
+    is_new: bool = False,
+    url: str = "",
+    mobile_url: str = "",
+    time_display: str = "",
+    rank_threshold: int = 5,
+) -> Dict[str, Any]:
     return {
         "title": title,
         "source_name": "测试源",
-        "time_display": "",
+        "time_display": time_display,
         "count": count,
         "ranks": ranks,
-        "rank_threshold": 5,
-        "url": "",
-        "mobile_url": "",
+        "rank_threshold": rank_threshold,
+        "url": url,
+        "mobile_url": mobile_url,
         "is_new": is_new,
     }
 
@@ -107,6 +117,37 @@ class TestRenderNewsCardsHtml:
         cards_html, _ = _render_news_cards_html(news, cards_per_batch=12)
         assert "<script>alert(1)</script>" not in cards_html
         assert "&lt;script&gt;" in cards_html
+
+    def test_escapes_url_in_href(self):
+        payload_url = '"><script>alert(1)</script>'
+        news = [_title("标题1", [1], url=payload_url)]
+        cards_html, _ = _render_news_cards_html(news, cards_per_batch=12)
+        assert '"><script>' not in cards_html
+        assert utils.html_escape(payload_url) in cards_html
+        assert f'<a href="{utils.html_escape(payload_url)}"' in cards_html
+
+    def test_count_badge_shown_when_count_greater_than_one(self):
+        news = [_title("标题1", [1], count=3)]
+        cards_html, _ = _render_news_cards_html(news, cards_per_batch=12)
+        assert "3次" in cards_html
+
+    def test_time_display_rendered_simplified(self):
+        news = [_title("标题1", [1], time_display="[10:00 ~ 12:00]")]
+        cards_html, _ = _render_news_cards_html(news, cards_per_batch=12)
+        assert "10:00~12:00" in cards_html
+        assert "[" not in cards_html
+        assert "]" not in cards_html
+
+    def test_rank_tier_high_between_top_and_threshold(self):
+        news = [_title("标题1", [7], rank_threshold=10)]
+        cards_html, _ = _render_news_cards_html(news, cards_per_batch=12)
+        assert 'class="rank-num high"' in cards_html
+
+    def test_rank_tier_none_when_above_threshold(self):
+        news = [_title("标题1", [15], rank_threshold=10)]
+        cards_html, _ = _render_news_cards_html(news, cards_per_batch=12)
+        assert "rank-num top" not in cards_html
+        assert "rank-num high" not in cards_html
 
 
 def _report_data(stats=None, failed_ids=None):
