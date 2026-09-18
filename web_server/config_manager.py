@@ -169,6 +169,7 @@ class ConfigManager:
             "version_check_url": config.get("app", {}).get("version_check_url", ""),
             "show_version_update": config.get("app", {}).get("show_version_update", True),
             "request_interval": config.get("crawler", {}).get("request_interval", 1000),
+            "max_workers": config.get("crawler", {}).get("max_workers", 5),
             "enable_crawler": config.get("crawler", {}).get("enable_crawler", True),
             "use_proxy": config.get("crawler", {}).get("use_proxy", False),
             "default_proxy": config.get("crawler", {}).get("default_proxy", ""),
@@ -211,6 +212,7 @@ class ConfigManager:
                 },
                 "crawler": {
                     "request_interval": int(form_data.get("request_interval", 1000)),
+                    "max_workers": int(form_data.get("max_workers", 5)),
                     "enable_crawler": form_data.get("enable_crawler", True),
                     "use_proxy": form_data.get("use_proxy", False),
                     "default_proxy": form_data.get("default_proxy", ""),

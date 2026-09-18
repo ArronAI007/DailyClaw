@@ -1,6 +1,7 @@
 import json
 import random
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import requests
@@ -10,6 +11,11 @@ from trendradar.logging_config import get_logger
 
 
 logger = get_logger(__name__)
+
+
+IdInfo = Union[str, Tuple[str, str], Tuple[str, str, str]]
+
+
 class DataFetcher:
     """数据获取器"""
 
@@ -17,9 +23,11 @@ class DataFetcher:
         self,
         request_interval: int = 1000,
         proxy_url: Optional[str] = None,
+        max_workers: int = 5,
     ):
         self.request_interval = request_interval
         self.proxy_url = proxy_url
+        self.max_workers = max_workers
 
     def fetch_data(
         self,
@@ -87,63 +95,89 @@ class DataFetcher:
                     return None, id_value, alias
         return None, id_value, alias
 
+    @staticmethod
+    def _extract_id_value(id_info: IdInfo) -> str:
+        return id_info[0] if isinstance(id_info, tuple) else id_info
+
+    def _fetch_with_stagger(self, id_info: IdInfo, start_delay: float) -> Tuple[Optional[str], str, str]:
+        """按错峰延迟等待后再发起请求，避免并发瞬间打满目标接口"""
+        if start_delay > 0:
+            time.sleep(start_delay)
+        return self.fetch_data(id_info)
+
     def crawl_websites(
         self,
-        ids_list: List[Union[str, Tuple[str, str], Tuple[str, str, str]]],
+        ids_list: List[IdInfo],
         request_interval: Optional[int] = None,
+        max_workers: Optional[int] = None,
     ) -> Tuple[Dict, Dict, List]:
-        """爬取多个网站数据"""
+        """并发爬取多个网站数据
+
+        使用线程池并发请求各平台接口；同一批并发 worker 内部按
+        request_interval 错峰启动，既提升整体抓取速度，又避免瞬间
+        对目标接口发起过多并发请求。
+        """
         results: Dict[str, Any] = {}
         id_to_name: Dict[str, str] = {}
         failed_ids: List[str] = []
 
+        if not ids_list:
+            return results, id_to_name, failed_ids
+
         interval = request_interval if request_interval is not None else self.request_interval
+        workers = max(1, max_workers if max_workers is not None else self.max_workers)
 
-        for i, id_info in enumerate(ids_list):
-            if isinstance(id_info, tuple):
-                id_value = id_info[0]
-                name = id_info[1] if len(id_info) > 1 else id_value
-            else:
-                id_value = id_info
-                name = id_value
-
+        for id_info in ids_list:
+            id_value = self._extract_id_value(id_info)
+            name = id_info[1] if isinstance(id_info, tuple) and len(id_info) > 1 else id_value
             id_to_name[id_value] = name
-            response, _, _ = self.fetch_data(id_info)
 
-            if response:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            future_to_id: Dict[Any, str] = {}
+            for i, id_info in enumerate(ids_list):
+                batch_position = i % workers
+                base_delay = (interval + random.randint(-10, 20)) / 1000
+                start_delay = max(0.0, batch_position * base_delay)
+                future = executor.submit(self._fetch_with_stagger, id_info, start_delay)
+                future_to_id[future] = self._extract_id_value(id_info)
+
+            for future in as_completed(future_to_id):
+                id_value = future_to_id[future]
                 try:
-                    data = json.loads(response)
-                    results[id_value] = {}
-                    for index, item in enumerate(data.get("items", []), 1):
-                        title = item.get("title")
-                        # 跳过无效标题（None、float、空字符串）
-                        if title is None or isinstance(title, float) or not str(title).strip():
-                            continue
-                        title = str(title).strip()
-                        url = item.get("url", "")
-                        mobile_url = item.get("mobileUrl", "")
-
-                        if title in results[id_value]:
-                            results[id_value][title]["ranks"].append(index)
-                        else:
-                            results[id_value][title] = {
-                                "ranks": [index],
-                                "url": url,
-                                "mobileUrl": mobile_url,
-                            }
-                except json.JSONDecodeError:
-                    logger.error(f"解析 {id_value} 响应失败")
-                    failed_ids.append(id_value)
+                    response, _, _ = future.result()
                 except Exception as e:
-                    logger.exception(f"处理 {id_value} 数据出错: {e}")
-                    failed_ids.append(id_value)
-            else:
-                failed_ids.append(id_value)
+                    logger.exception(f"请求 {id_value} 执行异常: {e}")
+                    response = None
 
-            if i < len(ids_list) - 1:
-                actual_interval = interval + random.randint(-10, 20)
-                actual_interval = max(50, actual_interval)
-                time.sleep(actual_interval / 1000)
+                if response:
+                    try:
+                        data = json.loads(response)
+                        results[id_value] = {}
+                        for index, item in enumerate(data.get("items", []), 1):
+                            title = item.get("title")
+                            # 跳过无效标题（None、float、空字符串）
+                            if title is None or isinstance(title, float) or not str(title).strip():
+                                continue
+                            title = str(title).strip()
+                            url = item.get("url", "")
+                            mobile_url = item.get("mobileUrl", "")
+
+                            if title in results[id_value]:
+                                results[id_value][title]["ranks"].append(index)
+                            else:
+                                results[id_value][title] = {
+                                    "ranks": [index],
+                                    "url": url,
+                                    "mobileUrl": mobile_url,
+                                }
+                    except json.JSONDecodeError:
+                        logger.error(f"解析 {id_value} 响应失败")
+                        failed_ids.append(id_value)
+                    except Exception as e:
+                        logger.exception(f"处理 {id_value} 数据出错: {e}")
+                        failed_ids.append(id_value)
+                else:
+                    failed_ids.append(id_value)
 
         logger.error(f"成功: {list(results.keys())}, 失败: {failed_ids}")
         return results, id_to_name, failed_ids

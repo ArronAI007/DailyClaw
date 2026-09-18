@@ -23,6 +23,10 @@
                     <input type="number" name="request_interval" value="{{ config.request_interval or 1000 }}" min="100" max="10000">
                 </div>
                 <div class="form-group">
+                    <label>并发数</label>
+                    <input type="number" name="max_workers" value="{{ config.max_workers or 5 }}" min="1" max="20">
+                </div>
+                <div class="form-group">
                     <label>启用爬虫</label>
                     <label class="switch">
                         <input type="checkbox" name="enable_crawler" {% if config.enable_crawler %}checked{% endif %}>
@@ -435,6 +439,7 @@ async function saveConfig() {
         version_check_url: form.querySelector('[name="version_check_url"]')?.value || '',
         show_version_update: form.querySelector('[name="show_version_update"]')?.checked ?? true,
         request_interval: parseInt(form.querySelector('[name="request_interval"]').value) || 1000,
+        max_workers: parseInt(form.querySelector('[name="max_workers"]').value) || 5,
         enable_crawler: form.querySelector('[name="enable_crawler"]')?.checked ?? true,
         use_proxy: form.querySelector('[name="use_proxy"]')?.checked ?? false,
         default_proxy: form.querySelector('[name="default_proxy"]')?.value || '',

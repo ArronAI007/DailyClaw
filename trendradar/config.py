@@ -166,6 +166,10 @@ def load_config():
         "VERSION_CHECK_URL": config_data["app"]["version_check_url"],
         "SHOW_VERSION_UPDATE": config_data["app"]["show_version_update"],
         "REQUEST_INTERVAL": config_data["crawler"]["request_interval"],
+        "MAX_WORKERS": int(
+            os.environ.get("MAX_WORKERS", "").strip() or "0"
+        )
+        or config_data["crawler"].get("max_workers", 5),
         "REPORT_MODE": os.environ.get("REPORT_MODE", "").strip()
         or config_data["report"]["mode"],
         "RANK_THRESHOLD": config_data["report"]["rank_threshold"],

@@ -3,6 +3,7 @@ app:
   show_version_update: true
 crawler:
   request_interval: 1000
+  max_workers: 5
   enable_crawler: true
   use_proxy: false
   default_proxy: http://127.0.0.1:10086

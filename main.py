@@ -2259,7 +2259,9 @@ class NewsAnalyzer:
         self.update_info = None
         self.proxy_url = None
         self._setup_proxy()
-        self.data_fetcher = DataFetcher(CONFIG["REQUEST_INTERVAL"], self.proxy_url)
+        self.data_fetcher = DataFetcher(
+            CONFIG["REQUEST_INTERVAL"], self.proxy_url, CONFIG["MAX_WORKERS"]
+        )
 
         if self.is_github_actions:
             self._check_version_update()
