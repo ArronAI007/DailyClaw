@@ -3464,6 +3464,8 @@ mypy trendradar/ main.py
 ### 项目结构
 
 ```
+main.py                # 爬取/推送主流程入口
+
 trendradar/
 ├── config.py          # 配置加载与管理
 ├── fetcher.py         # 数据爬取
@@ -3481,7 +3483,36 @@ trendradar/
     ├── slack.py       # Slack 推送
     ├── telegram.py    # Telegram 推送
     └── wework.py      # 企业微信推送
-mcp_server/            # MCP 服务器实现
+
+mcp_server/            # MCP 服务器实现（AI 智能分析）
+├── server.py          # MCP 服务入口
+├── services/          # 数据缓存、解析、查询服务
+│   ├── cache_service.py
+│   ├── data_service.py
+│   └── parser_service.py
+├── tools/             # 对外暴露的 MCP 工具
+│   ├── analytics.py       # 趋势分析
+│   ├── config_mgmt.py     # 配置管理
+│   ├── data_query.py      # 基础查询
+│   ├── search_tools.py    # 智能检索
+│   └── system.py          # 系统工具
+└── utils/             # 日期解析、校验、错误处理
+
+web_server/            # Web 控制界面（DailyClaw 新增）
+├── server.py          # FastAPI 服务入口
+├── config_manager.py  # 可视化配置读写
+├── static/            # 前端静态资源（css/js）
+└── templates/         # Jinja2 页面模板
+    ├── base.html
+    ├── dashboard.html  # Dashboard 概览
+    ├── reports.html    # 报告列表
+    ├── report_view.html# 报告详情
+    └── config.html     # 配置管理页
+
+templates/             # 推送/网页报告模板（report.html、new_titles.html、stats.html）
+config/                # config.yaml、frequency_words.txt 及备份
+docker/                # Dockerfile、docker-compose、entrypoint 等部署文件
+tests/                 # pytest 单元测试
 ```
 
 ## 📄 许可证
