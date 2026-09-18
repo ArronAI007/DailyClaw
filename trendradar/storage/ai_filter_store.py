@@ -8,6 +8,10 @@
 
 用 title_hash（标题的 md5）代替上游 TrendRadar 的 news_item_id 外键，因为
 DailyClaw 没有一个全量新闻 SQLite 表——新闻身份从头到尾都是标题文本本身。
+
+注意：废弃一个标签是软删除（标记 status='deprecated'），而非硬删除行。
+该标签的已保存结果仍留在 ai_filter_results 表中，但在 get_active_ai_filter_results
+中通过 JOIN 的 status='active' 条件被过滤掉，不是真正删除。
 """
 
 import hashlib
@@ -160,23 +164,21 @@ class AIFilterStore:
         self, tags: List[Dict[str, Any]], interests_file: str = "ai_interests.txt"
     ) -> None:
         with self._connect() as conn:
-            for t in tags:
-                conn.execute(
-                    "UPDATE ai_filter_tags SET priority = ? "
-                    "WHERE tag = ? AND interests_file = ? AND status = 'active'",
-                    (t["priority"], t["tag"], interests_file),
-                )
+            conn.executemany(
+                "UPDATE ai_filter_tags SET priority = ? "
+                "WHERE tag = ? AND interests_file = ? AND status = 'active'",
+                [(t["priority"], t["tag"], interests_file) for t in tags],
+            )
 
     def update_ai_filter_tag_descriptions(
         self, tags: List[Dict[str, Any]], interests_file: str = "ai_interests.txt"
     ) -> None:
         with self._connect() as conn:
-            for t in tags:
-                conn.execute(
-                    "UPDATE ai_filter_tags SET description = ? "
-                    "WHERE tag = ? AND interests_file = ? AND status = 'active'",
-                    (t.get("description", ""), t["tag"], interests_file),
-                )
+            conn.executemany(
+                "UPDATE ai_filter_tags SET description = ? "
+                "WHERE tag = ? AND interests_file = ? AND status = 'active'",
+                [(t.get("description", ""), t["tag"], interests_file) for t in tags],
+            )
 
     def get_analyzed_title_hashes(self, interests_file: str = "ai_interests.txt") -> Set[str]:
         with self._connect() as conn:

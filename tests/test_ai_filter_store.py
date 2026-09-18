@@ -74,6 +74,15 @@ class TestAIFilterStoreTags:
         remaining = store.get_active_ai_filter_tags()
         assert [t["tag"] for t in remaining] == ["财经"]
 
+    def test_deprecate_specific_tags_with_empty_list_is_noop(self, store):
+        store.save_ai_filter_tags(
+            [{"tag": "科技", "description": "", "priority": 1}],
+            version=1,
+            prompt_hash="file:abc",
+        )
+        store.deprecate_specific_ai_filter_tags([])
+        assert [t["tag"] for t in store.get_active_ai_filter_tags()] == ["科技"]
+
     def test_update_tag_priorities(self, store):
         store.save_ai_filter_tags(
             [
@@ -167,4 +176,9 @@ class TestAIFilterStoreResults:
         store.save_ai_filter_results([{"title_hash": h1, "tag_id": tag_id, "relevance_score": 0.9}])
 
         store.deprecate_all_ai_filter_tags()
+        assert store.get_active_ai_filter_results() == []
+
+    def test_save_empty_results_is_noop(self, store):
+        saved = store.save_ai_filter_results([])
+        assert saved == 0
         assert store.get_active_ai_filter_results() == []
