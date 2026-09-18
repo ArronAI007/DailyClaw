@@ -15,8 +15,6 @@ a = Analysis(
     pathex=[project_root],
     binaries=[],
     datas=[
-        # HTML templates used by Jinja2
-        ('templates', 'templates'),
         # Default config files
         ('config', 'config'),
         # Static HTML report viewer

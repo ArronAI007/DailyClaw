@@ -62,7 +62,6 @@ jobs:
             --hidden-import websockets.legacy.server \
             --hidden-import pydantic \
             --hidden-import pydantic_settings \
-            --add-data "templates:templates" \
             --add-data "config:config" \
             --add-data "version:." \
             mcp_server/server.py
