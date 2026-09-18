@@ -1123,6 +1123,14 @@ a:hover {
     grid-template-columns: 1fr;
   }
 
+  .report-list-item {
+    flex-wrap: wrap;
+  }
+
+  .report-detail-link {
+    margin-left: 0;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
