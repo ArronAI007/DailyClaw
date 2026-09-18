@@ -104,3 +104,24 @@ document.getElementById('themeToggle')?.addEventListener('click', window.toggleT
     }
   });
 })();
+
+let currentNewsBatch = 0;
+
+function showNextNewsBatch() {
+  const grid = document.getElementById('newsGrid');
+  if (!grid) return;
+  const totalBatches = parseInt(grid.dataset.totalBatches || '1', 10);
+  if (totalBatches <= 1) return;
+
+  currentNewsBatch = (currentNewsBatch + 1) % totalBatches;
+
+  grid.querySelectorAll('.news-card').forEach(function (card) {
+    const batchIndex = parseInt(card.getAttribute('data-batch'), 10);
+    card.style.display = batchIndex === currentNewsBatch ? '' : 'none';
+  });
+
+  const indicator = document.getElementById('currentNewsBatchNum');
+  if (indicator) {
+    indicator.textContent = currentNewsBatch + 1;
+  }
+}
