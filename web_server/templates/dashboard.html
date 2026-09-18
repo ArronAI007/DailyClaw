@@ -23,30 +23,6 @@
     </button>
 </div>
 
-<div class="card platform-status-card">
-    <div class="card-header">
-        <div class="card-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-primary">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                <line x1="8" y1="21" x2="16" y2="21"/>
-                <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-            平台状态
-        </div>
-        <span class="card-badge">{{ platforms | selectattr('active') | list | length }}/{{ platforms | length }}</span>
-    </div>
-    <div class="card-body">
-        <div class="platform-list">
-            {% for platform in platforms %}
-            <div class="platform-item">
-                <span class="platform-dot {{ 'active' if platform.active else 'inactive' }}"></span>
-                <span class="platform-name">{{ platform.name }}</span>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
-
 {% if news_list %}
 <div class="news-grid" id="newsGrid" data-total-batches="{{ total_batches }}">
     {% for item in news_list %}

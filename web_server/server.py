@@ -339,9 +339,6 @@ async def dashboard(request: Request):
         logger.exception(f"获取系统状态失败: {e}")
         status = {"system": {"version": VERSION}, "data": {}, "health": "unknown"}
 
-    # 平台状态
-    platforms = get_platform_status()
-
     # 今日新闻卡片（跟真实报告同一条计算链路：关键词过滤 + 权重排序）
     try:
         news_list, cards_per_batch, total_batches = get_today_news_cards()
@@ -352,7 +349,6 @@ async def dashboard(request: Request):
     return templates.TemplateResponse(request, "dashboard.html", {
         "version": VERSION,
         "status": status,
-        "platforms": platforms,
         "news_list": news_list,
         "cards_per_batch": cards_per_batch,
         "total_batches": total_batches,
