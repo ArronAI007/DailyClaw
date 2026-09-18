@@ -15,6 +15,12 @@ class AIClient:
     """统一的 AI 客户端（基于 LiteLLM）"""
 
     def __init__(self, config: Dict[str, Any]):
+        """Initialize AIClient with uppercase config keys.
+
+        Args:
+            config: Dict with uppercase keys (MODEL, API_KEY, TEMPERATURE, MAX_TOKENS,
+                   TIMEOUT, NUM_RETRIES, FALLBACK_MODELS). Missing keys use defaults.
+        """
         self.model = config.get("MODEL", "deepseek/deepseek-v4-flash")
         self.api_key = config.get("API_KEY") or os.environ.get("AI_API_KEY", "")
         self.temperature = config.get("TEMPERATURE", 1.0)
@@ -25,6 +31,11 @@ class AIClient:
 
     def chat(self, messages: List[Dict[str, str]], **kwargs: Any) -> str:
         """调用 AI 模型进行对话，返回响应文本内容。
+
+        Args:
+            messages: Message list to pass to the model.
+            **kwargs: Override instance defaults for this call only. Supported:
+                     temperature, timeout, num_retries, max_tokens.
 
         Raises:
             Exception: API 调用失败时抛出（litellm 内部异常），调用方负责捕获。

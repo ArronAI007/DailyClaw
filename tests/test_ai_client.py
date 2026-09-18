@@ -73,3 +73,14 @@ class TestAIClientChat:
         client.chat([{"role": "user", "content": "hi"}])
         call_kwargs = mock_completion.call_args.kwargs
         assert call_kwargs["fallbacks"] == ["openai/gpt-4o-mini"]
+
+    @patch("trendradar.ai.client.completion")
+    def test_chat_kwargs_override_instance_defaults(self, mock_completion):
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="ok"))]
+        mock_completion.return_value = mock_response
+
+        client = AIClient({"TEMPERATURE": 1.0})
+        client.chat([{"role": "user", "content": "hi"}], temperature=0.2)
+        call_kwargs = mock_completion.call_args.kwargs
+        assert call_kwargs["temperature"] == 0.2
