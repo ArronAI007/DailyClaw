@@ -110,8 +110,8 @@ let currentNewsBatch = 0;
 function showNextNewsBatch() {
   const grid = document.getElementById('newsGrid');
   if (!grid) return;
-  const totalBatches = parseInt(grid.dataset.totalBatches || '1', 10);
-  if (totalBatches <= 1) return;
+  let totalBatches = parseInt(grid.dataset.totalBatches || '1', 10);
+  if (!Number.isFinite(totalBatches) || totalBatches <= 1) return;
 
   currentNewsBatch = (currentNewsBatch + 1) % totalBatches;
 

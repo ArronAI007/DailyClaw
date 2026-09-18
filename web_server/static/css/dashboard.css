@@ -1284,7 +1284,7 @@ a:hover {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: var(--color-warning);
+  background: #b45309;
   color: #fff;
   font-size: 0.65rem;
   font-weight: 700;
@@ -1328,15 +1328,15 @@ a:hover {
 
 .news-card-rank {
   color: #fff;
-  background: var(--color-text-muted);
+  background: #6b7280;
   font-size: 0.65rem;
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 10px;
 }
 
-.news-card-rank.top { background: var(--color-danger); }
-.news-card-rank.high { background: var(--color-warning); }
+.news-card-rank.top { background: #b91c1c; }
+.news-card-rank.high { background: #b45309; }
 
 .news-card-time,
 .news-card-count {
