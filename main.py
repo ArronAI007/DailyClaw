@@ -10,7 +10,7 @@ from trendradar.config import load_config, SMTP_CONFIGS, VERSION
 from trendradar import utils
 from trendradar.records import PushRecordManager
 from trendradar.fetcher import DataFetcher
-from trendradar.notifier import send_to_notifications, prepare_report_data
+from trendradar.notifier import send_to_notifications
 from trendradar.html_report import generate_html_report
 from trendradar.utils import load_frequency_words, matches_word_groups, calculate_news_weight
 from trendradar.logging_config import configure_logging, get_logger
