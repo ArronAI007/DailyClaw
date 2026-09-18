@@ -12,6 +12,7 @@ report:
   rank_threshold: 5
   sort_by_position_first: false
   max_news_per_keyword: 0
+  cards_per_batch: 12
   reverse_content_order: false
 notification:
   enable_notification: true

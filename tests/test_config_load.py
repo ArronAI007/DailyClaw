@@ -97,6 +97,23 @@ class TestLoadConfig:
             config = load_config()
             assert config["REPORT_MODE"] == "incremental"
 
+    def test_cards_per_batch_default(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config.yaml"
+            config_path.write_text(yaml.safe_dump(self._make_config_data()), encoding="utf-8")
+            monkeypatch.setenv("CONFIG_PATH", str(config_path))
+            config = load_config()
+            assert config["CARDS_PER_BATCH"] == 12
+
+    def test_env_override_cards_per_batch(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config.yaml"
+            config_path.write_text(yaml.safe_dump(self._make_config_data()), encoding="utf-8")
+            monkeypatch.setenv("CONFIG_PATH", str(config_path))
+            monkeypatch.setenv("CARDS_PER_BATCH", "20")
+            config = load_config()
+            assert config["CARDS_PER_BATCH"] == 20
+
     def test_env_override_enable_crawler(self, monkeypatch):
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path = Path(tmpdir) / "config.yaml"

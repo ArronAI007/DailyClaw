@@ -181,6 +181,10 @@ def load_config():
             os.environ.get("MAX_NEWS_PER_KEYWORD", "").strip() or "0"
         )
         or config_data["report"].get("max_news_per_keyword", 0),
+        "CARDS_PER_BATCH": int(
+            os.environ.get("CARDS_PER_BATCH", "").strip() or "0"
+        )
+        or config_data["report"].get("cards_per_batch", 12),
         "REVERSE_CONTENT_ORDER": os.environ.get("REVERSE_CONTENT_ORDER", "").strip().lower()
         in ("true", "1")
         if os.environ.get("REVERSE_CONTENT_ORDER", "").strip()
