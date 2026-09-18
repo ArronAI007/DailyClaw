@@ -3509,7 +3509,7 @@ web_server/            # Web 控制界面（DailyClaw 新增）
     ├── report_view.html# 报告详情
     └── config.html     # 配置管理页
 
-templates/             # 推送/网页报告模板（report.html、new_titles.html、stats.html）
+（templates/ 目录已删除：报告 HTML/CSS/JS 现在由 trendradar/html_report.py 生成，不再走模板文件）
 config/                # config.yaml、frequency_words.txt 及备份
 docker/                # Dockerfile、docker-compose、entrypoint 等部署文件
 tests/                 # pytest 单元测试

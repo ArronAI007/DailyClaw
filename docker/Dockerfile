@@ -53,7 +53,6 @@ RUN set -ex && \
 COPY pyproject.toml .
 COPY trendradar/ ./trendradar/
 COPY mcp_server/ ./mcp_server/
-COPY templates/ ./templates/
 COPY main.py .
 COPY docker/manage.py .
 RUN pip install --no-cache-dir .
