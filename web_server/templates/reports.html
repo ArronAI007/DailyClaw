@@ -6,7 +6,6 @@
 
 {% block content %}
 {% if grouped_reports %}
-    {% set ns = namespace(is_first=true) %}
     {% for date, reports in grouped_reports.items() %}
     <div class="report-group">
         <div class="report-group-header">
@@ -20,42 +19,15 @@
             <span class="report-count">{{ reports | length }} 份</span>
         </div>
 
-        {% for report in reports %}
-        <details class="report-detail" {% if ns.is_first %}open{% endif %}>
-            {% set ns.is_first = false %}
-            <summary class="report-detail-summary">
+        <div class="report-list">
+            {% for report in reports %}
+            <a href="/reports/view?path={{ report.path }}" class="report-list-item">
                 <span class="report-detail-time">{{ report.time_label }}</span>
                 <span class="report-detail-count">{{ report.total_items }} 条新闻</span>
-                <a href="/reports/view?path={{ report.path }}" class="report-detail-link" onclick="event.stopPropagation()">查看完整报告 ↗</a>
-            </summary>
-
-            <div class="report-detail-body">
-                {% if report.groups %}
-                <div class="report-platform-grid">
-                    {% for group in report.groups %}
-                    <div class="report-platform-group">
-                        <div class="report-platform-header">
-                            <span>{{ group.platform_name }}</span>
-                            <span class="report-platform-count">{{ group.news_items | length }}</span>
-                        </div>
-                        <ol class="report-news-list">
-                            {% for item in group.news_items %}
-                            <li>
-                                <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" class="report-news-link" data-title="{{ item.title }}" data-platform="{{ group.platform_name }}">{{ item.title }}</a>
-                            </li>
-                            {% endfor %}
-                        </ol>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state">
-                    <p>该报告暂无可解析的新闻内容</p>
-                </div>
-                {% endif %}
-            </div>
-        </details>
-        {% endfor %}
+                <span class="report-detail-link">查看完整报告 ↗</span>
+            </a>
+            {% endfor %}
+        </div>
     </div>
     {% endfor %}
 {% else %}
@@ -66,7 +38,7 @@
     </svg>
     <h3>暂无报告</h3>
     <p>请先执行爬取任务以生成报告</p>
-    <a href="/" class="btn btn-primary">前往概览</a>
+    <a href="/" class="btn btn-primary">前往首页</a>
 </div>
 {% endif %}
 {% endblock %}

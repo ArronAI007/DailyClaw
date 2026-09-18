@@ -363,14 +363,14 @@ async def reports_page(request: Request):
     """报告列表页"""
     reports = get_report_list()
 
-    # 解析每份报告的文本内容，提取新闻标题与链接
+    # 统计每份报告的新闻条数（不再解析成按平台分组的结构，
+    # 详细内容通过"查看完整报告"链接到实际生成的报告文件里看）
     for r in reports:
         try:
-            r["groups"] = parse_news_txt(r["txt_path"])
-            r["total_items"] = sum(len(g["news_items"]) for g in r["groups"])
+            groups = parse_news_txt(r["txt_path"])
+            r["total_items"] = sum(len(g["news_items"]) for g in groups)
         except Exception as e:
-            logger.exception(f"解析报告内容失败: {r['txt_path']}: {e}")
-            r["groups"] = []
+            logger.exception(f"统计报告条数失败: {r['txt_path']}: {e}")
             r["total_items"] = 0
 
     # 按日期分组
