@@ -141,6 +141,76 @@ class TestLoadConfig:
             config = load_config()
             assert config["FEISHU_WEBHOOK_URL"] == "https://feishu.env/hook"
 
+    def test_filter_method_defaults_to_keyword(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config.yaml"
+            config_path.write_text(yaml.safe_dump(self._make_config_data()), encoding="utf-8")
+            monkeypatch.setenv("CONFIG_PATH", str(config_path))
+            config = load_config()
+            assert config["FILTER"]["METHOD"] == "keyword"
+
+    def test_env_override_filter_method(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config.yaml"
+            config_path.write_text(yaml.safe_dump(self._make_config_data()), encoding="utf-8")
+            monkeypatch.setenv("CONFIG_PATH", str(config_path))
+            monkeypatch.setenv("FILTER_METHOD", "ai")
+            config = load_config()
+            assert config["FILTER"]["METHOD"] == "ai"
+
+    def test_ai_config_defaults(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config.yaml"
+            config_path.write_text(yaml.safe_dump(self._make_config_data()), encoding="utf-8")
+            monkeypatch.setenv("CONFIG_PATH", str(config_path))
+            monkeypatch.delenv("AI_API_KEY", raising=False)
+            config = load_config()
+            assert config["AI"]["MODEL"] == "deepseek/deepseek-v4-flash"
+            assert config["AI"]["API_KEY"] == ""
+            assert config["AI"]["TIMEOUT"] == 120
+            assert config["AI"]["TEMPERATURE"] == 1.0
+            assert config["AI"]["MAX_TOKENS"] == 5000
+            assert config["AI"]["NUM_RETRIES"] == 1
+            assert config["AI"]["FALLBACK_MODELS"] == []
+
+    def test_env_override_ai_api_key(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config.yaml"
+            config_path.write_text(yaml.safe_dump(self._make_config_data()), encoding="utf-8")
+            monkeypatch.setenv("CONFIG_PATH", str(config_path))
+            monkeypatch.setenv("AI_API_KEY", "env-secret")
+            config = load_config()
+            assert config["AI"]["API_KEY"] == "env-secret"
+
+    def test_ai_filter_config_defaults(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config.yaml"
+            config_path.write_text(yaml.safe_dump(self._make_config_data()), encoding="utf-8")
+            monkeypatch.setenv("CONFIG_PATH", str(config_path))
+            config = load_config()
+            assert config["AI_FILTER"]["BATCH_SIZE"] == 200
+            assert config["AI_FILTER"]["BATCH_INTERVAL"] == 2
+            assert config["AI_FILTER"]["MIN_SCORE"] == 0.7
+            assert config["AI_FILTER"]["RECLASSIFY_THRESHOLD"] == 0.6
+            assert config["AI_FILTER"]["PROMPT_FILE"] == "prompt.txt"
+            assert config["AI_FILTER"]["EXTRACT_PROMPT_FILE"] == "extract_prompt.txt"
+            assert config["AI_FILTER"]["UPDATE_TAGS_PROMPT_FILE"] == "update_tags_prompt.txt"
+
+    def test_custom_filter_ai_sections_override_defaults(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            data = self._make_config_data()
+            data["filter"] = {"method": "ai"}
+            data["ai"] = {"model": "openai/gpt-4o-mini", "api_key": "k"}
+            data["ai_filter"] = {"batch_size": 50, "min_score": 0.5}
+            config_path = Path(tmpdir) / "config.yaml"
+            config_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+            monkeypatch.setenv("CONFIG_PATH", str(config_path))
+            config = load_config()
+            assert config["FILTER"]["METHOD"] == "ai"
+            assert config["AI"]["MODEL"] == "openai/gpt-4o-mini"
+            assert config["AI_FILTER"]["BATCH_SIZE"] == 50
+            assert config["AI_FILTER"]["MIN_SCORE"] == 0.5
+
     def test_push_window_env_overrides(self, monkeypatch):
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path = Path(tmpdir) / "config.yaml"

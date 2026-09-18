@@ -253,6 +253,37 @@ def load_config():
             "HOTNESS_WEIGHT": config_data["weight"]["hotness_weight"],
         },
         "PLATFORMS": config_data["platforms"],
+        "FILTER": {
+            "METHOD": os.environ.get("FILTER_METHOD", "").strip()
+            or config_data.get("filter", {}).get("method", "keyword"),
+        },
+        "AI": {
+            "MODEL": os.environ.get("AI_MODEL", "").strip()
+            or config_data.get("ai", {}).get("model", "deepseek/deepseek-v4-flash"),
+            "API_KEY": os.environ.get("AI_API_KEY", "").strip()
+            or config_data.get("ai", {}).get("api_key", ""),
+            "TIMEOUT": int(os.environ.get("AI_TIMEOUT", "").strip() or "0")
+            or config_data.get("ai", {}).get("timeout", 120),
+            "TEMPERATURE": config_data.get("ai", {}).get("temperature", 1.0),
+            "MAX_TOKENS": config_data.get("ai", {}).get("max_tokens", 5000),
+            "NUM_RETRIES": config_data.get("ai", {}).get("num_retries", 1),
+            "FALLBACK_MODELS": config_data.get("ai", {}).get("fallback_models", []),
+        },
+        "AI_FILTER": {
+            "BATCH_SIZE": config_data.get("ai_filter", {}).get("batch_size", 200),
+            "BATCH_INTERVAL": config_data.get("ai_filter", {}).get("batch_interval", 2),
+            "MIN_SCORE": config_data.get("ai_filter", {}).get("min_score", 0.7),
+            "RECLASSIFY_THRESHOLD": config_data.get("ai_filter", {}).get(
+                "reclassify_threshold", 0.6
+            ),
+            "PROMPT_FILE": config_data.get("ai_filter", {}).get("prompt_file", "prompt.txt"),
+            "EXTRACT_PROMPT_FILE": config_data.get("ai_filter", {}).get(
+                "extract_prompt_file", "extract_prompt.txt"
+            ),
+            "UPDATE_TAGS_PROMPT_FILE": config_data.get("ai_filter", {}).get(
+                "update_tags_prompt_file", "update_tags_prompt.txt"
+            ),
+        },
     }
 
     # 通知渠道配置（环境变量优先）
