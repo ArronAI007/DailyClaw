@@ -10,3 +10,6 @@ htmlcov/
 
 # 爬取数据输出（本地生成，不应提交到仓库）
 output/
+
+# brainstorming 可视化协作产物（本地临时文件）
+.superpowers/
