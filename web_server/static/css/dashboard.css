@@ -1174,6 +1174,21 @@ a:hover {
   transform: translateY(-2px);
 }
 
+.news-card.tier-top {
+  border-left: 3px solid #b91c1c;
+  background: linear-gradient(135deg, rgba(185, 28, 28, 0.05), var(--color-surface) 45%);
+}
+
+.news-card.tier-high {
+  border-left: 3px solid #b45309;
+}
+
+.news-card.tier-top .news-card-title,
+.news-card.tier-top .news-card-title .report-news-link {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
 .news-card.new::after {
   content: "NEW";
   position: absolute;
