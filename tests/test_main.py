@@ -463,3 +463,100 @@ class TestFlattenTitlesForAI:
         flat = main._flatten_titles_for_ai(all_results, title_info, {}, None, rank_threshold=5)
 
         assert flat[0]["source_name"] == "unknown_source"
+
+
+class TestGetDailyStats:
+    @pytest.fixture(autouse=True)
+    def _restore_config(self):
+        original = dict(main.CONFIG)
+        yield
+        main.CONFIG.clear()
+        main.CONFIG.update(original)
+
+    def test_keyword_mode_matches_count_word_frequency_directly(self, monkeypatch):
+        main.CONFIG["FILTER"] = {"METHOD": "keyword"}
+
+        all_results = {"zhihu": {"AI新闻": {"url": "", "mobileUrl": ""}}}
+        title_info = {"zhihu": {"AI新闻": {}}}
+        id_to_name = {"zhihu": "知乎"}
+        word_groups = [{"required": [], "normal": ["AI"], "group_key": "AI"}]
+
+        direct_stats, direct_total = main.count_word_frequency(
+            all_results, word_groups, [], id_to_name, title_info, 5, {}, mode="daily",
+        )
+        via_helper_stats, via_helper_total = main.get_daily_stats(
+            all_results, word_groups, [], id_to_name, title_info, 5, {},
+        )
+
+        assert via_helper_stats == direct_stats
+        assert via_helper_total == direct_total
+
+    def test_ai_mode_success_skips_keyword_matching(self, monkeypatch):
+        main.CONFIG["FILTER"] = {"METHOD": "ai"}
+        main.CONFIG["AI"] = {}
+        main.CONFIG["AI_FILTER"] = {}
+
+        from trendradar.ai.filter_pipeline import AIFilterResult
+
+        fake_stats = [{"word": "科技", "count": 1, "position": 1, "percentage": 100.0, "titles": []}]
+
+        class _FakePipeline:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def run(self, all_titles):
+                return AIFilterResult(
+                    stats=fake_stats, total_matched=1, total_processed=1, success=True,
+                )
+
+        monkeypatch.setattr(main, "AIFilterPipeline", _FakePipeline)
+
+        count_word_frequency_called = {"n": 0}
+        original = main.count_word_frequency
+
+        def _counting(*args, **kwargs):
+            count_word_frequency_called["n"] += 1
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(main, "count_word_frequency", _counting)
+
+        all_results = {"zhihu": {"标题": {"url": "", "mobileUrl": ""}}}
+        title_info = {"zhihu": {"标题": {}}}
+
+        stats, total = main.get_daily_stats(all_results, [], [], {}, title_info, 5, {})
+
+        assert stats == fake_stats
+        assert total == 1
+        assert count_word_frequency_called["n"] == 0
+
+    def test_ai_mode_falls_back_to_keyword_on_failure(self, monkeypatch):
+        main.CONFIG["FILTER"] = {"METHOD": "ai"}
+        main.CONFIG["AI"] = {}
+        main.CONFIG["AI_FILTER"] = {}
+
+        from trendradar.ai.filter_pipeline import AIFilterResult
+
+        class _FailingPipeline:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def run(self, all_titles):
+                return AIFilterResult(success=False, error="兴趣描述文件为空或不存在")
+
+        monkeypatch.setattr(main, "AIFilterPipeline", _FailingPipeline)
+
+        all_results = {"zhihu": {"AI新闻": {"url": "", "mobileUrl": ""}}}
+        title_info = {"zhihu": {"AI新闻": {}}}
+        id_to_name = {"zhihu": "知乎"}
+        word_groups = [{"required": [], "normal": ["AI"], "group_key": "AI"}]
+
+        stats, total = main.get_daily_stats(
+            all_results, word_groups, [], id_to_name, title_info, 5, {},
+        )
+
+        # 降级成功：跟直接调用 count_word_frequency 的结果一致
+        expected_stats, expected_total = main.count_word_frequency(
+            all_results, word_groups, [], id_to_name, title_info, 5, {}, mode="daily",
+        )
+        assert stats == expected_stats
+        assert total == expected_total

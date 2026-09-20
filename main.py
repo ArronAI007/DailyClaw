@@ -14,6 +14,8 @@ from trendradar.notifier import send_to_notifications
 from trendradar.html_report import generate_html_report
 from trendradar.utils import load_frequency_words, matches_word_groups, calculate_news_weight
 from trendradar.logging_config import configure_logging, get_logger
+from trendradar.ai.filter_pipeline import AIFilterPipeline
+from trendradar.storage.ai_filter_store import AIFilterStore
 
 configure_logging()
 logger = get_logger(__name__)
@@ -419,6 +421,41 @@ def _flatten_titles_for_ai(
             })
 
     return flat
+
+
+def get_daily_stats(
+    all_results: Dict,
+    word_groups: List[Dict],
+    filter_words: List[str],
+    id_to_name: Dict,
+    title_info: Dict,
+    rank_threshold: int,
+    new_titles: Optional[Dict] = None,
+    global_filters: Optional[List[str]] = None,
+) -> Tuple[List[Dict], int]:
+    """当日汇总模式的统计入口。
+
+    filter.method == "ai" 时走 AI 分类（AIFilterPipeline），失败时自动降级为
+    关键词匹配（count_word_frequency），并记录一条 warning 日志。
+    filter.method == "keyword"（默认）或其他任意值时直接走关键词匹配，行为与
+    改动前完全一致。
+
+    返回值结构与 count_word_frequency 完全一致：(stats, total_titles)。
+    """
+    if CONFIG["FILTER"]["METHOD"] == "ai":
+        all_titles = _flatten_titles_for_ai(
+            all_results, title_info, id_to_name, new_titles, rank_threshold
+        )
+        pipeline = AIFilterPipeline(CONFIG["AI"], CONFIG["AI_FILTER"], AIFilterStore())
+        result = pipeline.run(all_titles)
+        if result.success:
+            return result.stats, result.total_processed
+        logger.warning(f"AI 分类失败（{result.error}），本次降级为关键词匹配")
+
+    return count_word_frequency(
+        all_results, word_groups, filter_words, id_to_name, title_info,
+        rank_threshold, new_titles, mode="daily", global_filters=global_filters,
+    )
 
 
 def count_word_frequency(
