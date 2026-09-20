@@ -588,3 +588,58 @@ class TestGetDailyStats:
         )
         assert stats == expected_stats
         assert total == expected_total
+
+
+class TestRunAnalysisPipelineAIRouting:
+    @pytest.fixture(autouse=True)
+    def _restore_config(self):
+        original = dict(main.CONFIG)
+        yield
+        main.CONFIG.clear()
+        main.CONFIG.update(original)
+
+    def _fake_self(self):
+        fake_self = MagicMock()
+        fake_self.rank_threshold = 5
+        fake_self.update_info = None
+        return fake_self
+
+    def test_daily_mode_routes_through_get_daily_stats(self, monkeypatch):
+        main.CONFIG["FILTER"] = {"METHOD": "keyword"}
+        monkeypatch.setattr(main, "generate_html_report", lambda *a, **kw: "fake.html")
+
+        called = {"n": 0}
+        original = main.get_daily_stats
+
+        def _counting(*args, **kwargs):
+            called["n"] += 1
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(main, "get_daily_stats", _counting)
+
+        stats, html_file = main.NewsAnalyzer._run_analysis_pipeline(
+            self._fake_self(), {}, "daily", {}, {}, [], [], {},
+        )
+
+        assert called["n"] == 1
+        assert html_file == "fake.html"
+
+    def test_current_mode_does_not_route_through_get_daily_stats(self, monkeypatch):
+        main.CONFIG["FILTER"] = {"METHOD": "ai"}
+        monkeypatch.setattr(main, "generate_html_report", lambda *a, **kw: "fake.html")
+
+        called = {"n": 0}
+
+        def _counting(*args, **kwargs):
+            called["n"] += 1
+            return [], 0
+
+        monkeypatch.setattr(main, "get_daily_stats", _counting)
+
+        main.NewsAnalyzer._run_analysis_pipeline(
+            self._fake_self(), {}, "current", {}, {}, [], [], {},
+        )
+
+        # current 模式即使 filter.method=ai 也不应该调用 get_daily_stats——
+        # 应该直接走 count_word_frequency，不受 AI 配置影响
+        assert called["n"] == 0

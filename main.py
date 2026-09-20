@@ -1408,18 +1408,31 @@ class NewsAnalyzer:
     ) -> Tuple[List[Dict], str]:
         """统一的分析流水线：数据处理 → 统计计算 → HTML生成"""
 
-        # 统计计算
-        stats, total_titles = count_word_frequency(
-            data_source,
-            word_groups,
-            filter_words,
-            id_to_name,
-            title_info,
-            self.rank_threshold,
-            new_titles,
-            mode=mode,
-            global_filters=global_filters,
-        )
+        # 统计计算：当日汇总模式按 filter.method 走 AI 分类或关键词匹配；
+        # 当前榜单/增量监控模式固定走关键词匹配（AIFilterPipeline 目前不支持这两种模式）
+        if mode == "daily":
+            stats, total_titles = get_daily_stats(
+                data_source,
+                word_groups,
+                filter_words,
+                id_to_name,
+                title_info,
+                self.rank_threshold,
+                new_titles,
+                global_filters=global_filters,
+            )
+        else:
+            stats, total_titles = count_word_frequency(
+                data_source,
+                word_groups,
+                filter_words,
+                id_to_name,
+                title_info,
+                self.rank_threshold,
+                new_titles,
+                mode=mode,
+                global_filters=global_filters,
+            )
 
         # HTML生成
         html_file = generate_html_report(
