@@ -443,14 +443,18 @@ def get_daily_stats(
     返回值结构与 count_word_frequency 完全一致：(stats, total_titles)。
     """
     if CONFIG["FILTER"]["METHOD"] == "ai":
-        all_titles = _flatten_titles_for_ai(
-            all_results, title_info, id_to_name, new_titles, rank_threshold
-        )
-        pipeline = AIFilterPipeline(CONFIG["AI"], CONFIG["AI_FILTER"], AIFilterStore())
-        result = pipeline.run(all_titles)
-        if result.success:
-            return result.stats, result.total_processed
-        logger.warning(f"AI 分类失败（{result.error}），本次降级为关键词匹配")
+        try:
+            all_titles = _flatten_titles_for_ai(
+                all_results, title_info, id_to_name, new_titles, rank_threshold
+            )
+            pipeline = AIFilterPipeline(CONFIG["AI"], CONFIG["AI_FILTER"], AIFilterStore())
+            result = pipeline.run(all_titles)
+        except Exception as e:
+            logger.warning(f"AI 分类异常降级（{e}），本次降级为关键词匹配")
+        else:
+            if result.success:
+                return result.stats, result.total_processed
+            logger.warning(f"AI 分类失败（{result.error}），本次降级为关键词匹配")
 
     return count_word_frequency(
         all_results, word_groups, filter_words, id_to_name, title_info,

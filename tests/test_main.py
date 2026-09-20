@@ -510,6 +510,7 @@ class TestGetDailyStats:
                 )
 
         monkeypatch.setattr(main, "AIFilterPipeline", _FakePipeline)
+        monkeypatch.setattr(main, "AIFilterStore", lambda *args, **kwargs: object())
 
         count_word_frequency_called = {"n": 0}
         original = main.count_word_frequency
@@ -544,6 +545,7 @@ class TestGetDailyStats:
                 return AIFilterResult(success=False, error="兴趣描述文件为空或不存在")
 
         monkeypatch.setattr(main, "AIFilterPipeline", _FailingPipeline)
+        monkeypatch.setattr(main, "AIFilterStore", lambda *args, **kwargs: object())
 
         all_results = {"zhihu": {"AI新闻": {"url": "", "mobileUrl": ""}}}
         title_info = {"zhihu": {"AI新闻": {}}}
@@ -555,6 +557,32 @@ class TestGetDailyStats:
         )
 
         # 降级成功：跟直接调用 count_word_frequency 的结果一致
+        expected_stats, expected_total = main.count_word_frequency(
+            all_results, word_groups, [], id_to_name, title_info, 5, {}, mode="daily",
+        )
+        assert stats == expected_stats
+        assert total == expected_total
+
+    def test_ai_mode_falls_back_when_pipeline_raises_unexpectedly(self, monkeypatch):
+        main.CONFIG["FILTER"] = {"METHOD": "ai"}
+        main.CONFIG["AI"] = {}
+        main.CONFIG["AI_FILTER"] = {}
+
+        def _raising_pipeline(*args, **kwargs):
+            raise RuntimeError("database is locked")
+
+        monkeypatch.setattr(main, "AIFilterPipeline", _raising_pipeline)
+        monkeypatch.setattr(main, "AIFilterStore", lambda *args, **kwargs: object())
+
+        all_results = {"zhihu": {"AI新闻": {"url": "", "mobileUrl": ""}}}
+        title_info = {"zhihu": {"AI新闻": {}}}
+        id_to_name = {"zhihu": "知乎"}
+        word_groups = [{"required": [], "normal": ["AI"], "group_key": "AI"}]
+
+        stats, total = main.get_daily_stats(
+            all_results, word_groups, [], id_to_name, title_info, 5, {},
+        )
+
         expected_stats, expected_total = main.count_word_frequency(
             all_results, word_groups, [], id_to_name, title_info, 5, {}, mode="daily",
         )
