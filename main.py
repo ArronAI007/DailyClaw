@@ -376,6 +376,51 @@ def format_rank_display(ranks: List[int], rank_threshold: int, format_type: str)
             return f"[{min_rank} - {max_rank}]"
 
 
+def _flatten_titles_for_ai(
+    all_results: Dict,
+    title_info: Dict,
+    id_to_name: Dict,
+    new_titles: Optional[Dict],
+    rank_threshold: int,
+) -> List[Dict]:
+    """把按平台分组的当天新闻打平成 AIFilterPipeline.run() 需要的平铺列表。
+
+    不做任何关键词过滤——AI 模式的目标就是让用户看到全部新闻，只是分好类。
+    """
+    new_titles = new_titles or {}
+    flat: List[Dict] = []
+
+    for source_id, titles_data in all_results.items():
+        source_name = id_to_name.get(source_id, source_id)
+        new_titles_for_source = new_titles.get(source_id, {})
+
+        for title, title_data in titles_data.items():
+            info = title_info.get(source_id, {}).get(title, {})
+
+            ranks = info.get("ranks") or title_data.get("ranks", []) or [99]
+            url = info.get("url", title_data.get("url", ""))
+            mobile_url = info.get("mobileUrl", title_data.get("mobileUrl", ""))
+            first_time = info.get("first_time", "")
+            last_time = info.get("last_time", "")
+            count = info.get("count", 1)
+
+            flat.append({
+                "title": title,
+                "source_name": source_name,
+                "first_time": first_time,
+                "last_time": last_time,
+                "time_display": format_time_display(first_time, last_time),
+                "count": count,
+                "ranks": ranks,
+                "rank_threshold": rank_threshold,
+                "url": url,
+                "mobileUrl": mobile_url,
+                "is_new": title in new_titles_for_source,
+            })
+
+    return flat
+
+
 def count_word_frequency(
     results: Dict,
     word_groups: List[Dict],

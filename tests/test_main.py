@@ -382,3 +382,72 @@ class TestSaveTitlesToFile:
             assert "failed1" in content
         finally:
             os.chdir(old_cwd)
+
+
+class TestFlattenTitlesForAI:
+    def test_maps_fields_correctly(self):
+        all_results = {
+            "zhihu": {
+                "标题一": {"ranks": [3], "url": "http://a.com/1", "mobileUrl": "http://m.a.com/1"},
+            },
+        }
+        title_info = {
+            "zhihu": {
+                "标题一": {
+                    "first_time": "10:00", "last_time": "10:30", "count": 2,
+                    "ranks": [1, 3], "url": "http://a.com/1", "mobileUrl": "http://m.a.com/1",
+                },
+            },
+        }
+        id_to_name = {"zhihu": "知乎"}
+        new_titles = {"zhihu": {"标题一": {}}}
+
+        flat = main._flatten_titles_for_ai(all_results, title_info, id_to_name, new_titles, rank_threshold=5)
+
+        assert len(flat) == 1
+        item = flat[0]
+        assert item["title"] == "标题一"
+        assert item["source_name"] == "知乎"
+        assert item["ranks"] == [1, 3]
+        assert item["rank_threshold"] == 5
+        assert item["url"] == "http://a.com/1"
+        assert item["mobileUrl"] == "http://m.a.com/1"
+        assert item["count"] == 2
+        assert item["time_display"] == "[10:00 ~ 10:30]"
+        assert item["is_new"] is True
+
+    def test_defaults_ranks_to_99_when_missing(self):
+        all_results = {"zhihu": {"标题": {"url": "", "mobileUrl": ""}}}
+        title_info = {"zhihu": {"标题": {}}}
+
+        flat = main._flatten_titles_for_ai(all_results, title_info, {}, None, rank_threshold=5)
+
+        assert flat[0]["ranks"] == [99]
+        assert flat[0]["is_new"] is False
+
+    def test_flattens_multiple_platforms(self):
+        all_results = {
+            "zhihu": {"标题一": {"url": "", "mobileUrl": ""}},
+            "weibo": {"标题二": {"url": "", "mobileUrl": ""}},
+        }
+        title_info = {"zhihu": {"标题一": {}}, "weibo": {"标题二": {}}}
+        id_to_name = {"zhihu": "知乎", "weibo": "微博"}
+
+        flat = main._flatten_titles_for_ai(all_results, title_info, id_to_name, None, rank_threshold=5)
+
+        titles = {item["title"]: item["source_name"] for item in flat}
+        assert titles == {"标题一": "知乎", "标题二": "微博"}
+
+    def test_no_keyword_filtering_applied(self):
+        """AI 模式的核心前提：打平不做任何关键词过滤，全部标题都进来"""
+        all_results = {
+            "zhihu": {
+                "无关新闻标题": {"url": "", "mobileUrl": ""},
+                "另一条无关新闻": {"url": "", "mobileUrl": ""},
+            },
+        }
+        title_info = {"zhihu": {"无关新闻标题": {}, "另一条无关新闻": {}}}
+
+        flat = main._flatten_titles_for_ai(all_results, title_info, {}, None, rank_threshold=5)
+
+        assert len(flat) == 2
