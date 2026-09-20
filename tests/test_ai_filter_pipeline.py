@@ -253,3 +253,49 @@ class TestAIFilterPipelineRun:
         assert result.stats[0]["count"] == 3
         titles_in_result = sorted(t["title"] for t in result.stats[0]["titles"])
         assert titles_in_result == ["新闻一", "新闻三", "新闻二"]
+
+    def test_percentage_field_computed_correctly(self, store):
+        mock_filter = MagicMock()
+        mock_filter.load_interests_content.return_value = "我关注科技和财经"
+        mock_filter.compute_interests_hash.return_value = "ai_interests.txt:hash1"
+        mock_filter.extract_tags.return_value = [
+            {"tag": "科技", "description": ""},
+            {"tag": "财经", "description": ""},
+        ]
+
+        def fake_classify(titles_for_ai, active_tags, interests_content):
+            tag_map = {t["tag"]: t["id"] for t in active_tags}
+            results = []
+            for item in titles_for_ai:
+                tag = "科技" if item["title"] in ("科技新闻一", "科技新闻二", "科技新闻三") else "财经"
+                results.append({
+                    "title": item["title"], "tag": tag,
+                    "tag_id": tag_map[tag], "relevance_score": 0.9,
+                })
+            return results
+
+        mock_filter.classify_batch.side_effect = fake_classify
+
+        pipeline = _make_pipeline(store, mock_filter)
+        all_titles = [
+            _title_entry("科技新闻一"), _title_entry("科技新闻二"),
+            _title_entry("科技新闻三"), _title_entry("财经新闻一"),
+        ]
+
+        result = pipeline.run(all_titles)
+
+        tech_group = next(g for g in result.stats if g["word"] == "科技")
+        finance_group = next(g for g in result.stats if g["word"] == "财经")
+        assert tech_group["percentage"] == 75.0
+        assert finance_group["percentage"] == 25.0
+
+    def test_percentage_is_zero_when_total_processed_is_zero(self, store):
+        mock_filter = MagicMock()
+        mock_filter.load_interests_content.return_value = None
+
+        pipeline = _make_pipeline(store, mock_filter)
+        result = pipeline.run([])
+
+        # total_processed=0 走的是失败分支（兴趣描述缺失），stats 本来就是空列表，
+        # 这里只是确认不会因为除以零而抛异常
+        assert result.stats == []

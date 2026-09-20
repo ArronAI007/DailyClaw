@@ -208,6 +208,13 @@ class AIFilterPipeline:
         stats = sorted(tag_groups.values(), key=lambda g: g["position"])
         total_matched = sum(g["count"] for g in stats)
 
+        for group in stats:
+            group["percentage"] = (
+                round(group["count"] / total_processed * 100, 2)
+                if total_processed > 0
+                else 0
+            )
+
         return AIFilterResult(
             stats=stats,
             total_matched=total_matched,
