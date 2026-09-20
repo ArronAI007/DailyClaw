@@ -451,3 +451,15 @@ class TestFlattenTitlesForAI:
         flat = main._flatten_titles_for_ai(all_results, title_info, {}, None, rank_threshold=5)
 
         assert len(flat) == 2
+
+    def test_handles_empty_results(self):
+        flat = main._flatten_titles_for_ai({}, {}, {}, None, rank_threshold=5)
+        assert flat == []
+
+    def test_falls_back_to_source_id_when_name_unknown(self):
+        all_results = {"unknown_source": {"标题": {"url": "", "mobileUrl": ""}}}
+        title_info = {"unknown_source": {"标题": {}}}
+
+        flat = main._flatten_titles_for_ai(all_results, title_info, {}, None, rank_threshold=5)
+
+        assert flat[0]["source_name"] == "unknown_source"

@@ -377,12 +377,12 @@ def format_rank_display(ranks: List[int], rank_threshold: int, format_type: str)
 
 
 def _flatten_titles_for_ai(
-    all_results: Dict,
-    title_info: Dict,
-    id_to_name: Dict,
-    new_titles: Optional[Dict],
+    all_results: Dict[str, Dict[str, Dict[str, Any]]],
+    title_info: Dict[str, Dict[str, Dict[str, Any]]],
+    id_to_name: Dict[str, str],
+    new_titles: Optional[Dict[str, Dict[str, Any]]],
     rank_threshold: int,
-) -> List[Dict]:
+) -> List[Dict[str, Any]]:
     """把按平台分组的当天新闻打平成 AIFilterPipeline.run() 需要的平铺列表。
 
     不做任何关键词过滤——AI 模式的目标就是让用户看到全部新闻，只是分好类。
