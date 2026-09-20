@@ -292,6 +292,10 @@ def prepare_report_data(
                 "mobile_url": title_data.get("mobileUrl", ""),
                 "is_new": title_data.get("is_new", False),
             }
+            # 仅在源数据带 category 时才透传（AI 分类模式），保持关键词模式下
+            # 输出字典的 key 集合跟之前一致，不引入空字符串的 category 字段。
+            if "category" in title_data:
+                processed_title["category"] = title_data["category"]
             processed_titles.append(processed_title)
 
         processed_stats.append(

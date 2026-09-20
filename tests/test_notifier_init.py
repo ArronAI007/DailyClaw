@@ -45,6 +45,41 @@ class TestPrepareReportData:
         assert result["stats"][0]["word"] == "测试"
         assert result["stats"][0]["titles"][0]["url"] == "http://a.com"
 
+    def test_preserves_category_when_present_omits_when_absent(self):
+        stats = [
+            {
+                "word": "测试",
+                "count": 2,
+                "percentage": 50,
+                "titles": [
+                    {
+                        "title": "标题1",
+                        "source_name": "源1",
+                        "time_display": "10:00",
+                        "count": 1,
+                        "ranks": [1],
+                        "rank_threshold": 5,
+                        "url": "http://a.com",
+                        "mobileUrl": "http://m.a.com",
+                        "is_new": False,
+                        "category": "科技",
+                    },
+                    {
+                        "title": "标题2",
+                        "source_name": "源2",
+                        "time_display": "10:01",
+                        "count": 1,
+                        "ranks": [2],
+                        "rank_threshold": 5,
+                    },
+                ],
+            }
+        ]
+        result = prepare_report_data(self._make_config(), stats)
+        titles = result["stats"][0]["titles"]
+        assert titles[0]["category"] == "科技"
+        assert "category" not in titles[1]
+
     def test_skips_zero_count_stats(self):
         stats = [
             {"word": "测试", "count": 0, "titles": []},

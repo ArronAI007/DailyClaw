@@ -71,7 +71,7 @@ def get_today_news_cards() -> Tuple[List[Dict[str, Any]], int, int]:
         new_titles = main.detect_latest_new_titles(current_platform_ids)
         word_groups, filter_words, global_filters = load_frequency_words()
 
-        stats, _total_titles = main.count_word_frequency(
+        stats, _total_titles = main.get_daily_stats(
             all_results,
             word_groups,
             filter_words,
@@ -79,7 +79,6 @@ def get_today_news_cards() -> Tuple[List[Dict[str, Any]], int, int]:
             title_info,
             fresh_config["RANK_THRESHOLD"],
             new_titles,
-            mode="daily",
             global_filters=global_filters,
         )
 

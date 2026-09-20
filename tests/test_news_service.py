@@ -11,8 +11,9 @@ from trendradar.utils import format_date_folder
 from web_server.news_service import get_today_news_cards
 
 
-def _write_config(tmp_path: Path, cards_per_batch: int = 12) -> None:
+def _write_config(tmp_path: Path, cards_per_batch: int = 12, filter_method: str = "keyword") -> None:
     config_data = {
+        "filter": {"method": filter_method},
         "app": {"version_check_url": "", "show_version_update": False},
         "crawler": {
             "request_interval": 1000,
@@ -143,3 +144,74 @@ class TestGetTodayNewsCards:
 
         assert call_count["n"] == 0  # 命中缓存，完全没再调用 read_all_today_titles
         assert second_result == first_result
+
+    def test_ai_mode_tags_news_with_category(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("CONFIG_PATH", raising=False)
+        _write_config(tmp_path, filter_method="ai")
+
+        date_folder = format_date_folder()
+        txt_dir = tmp_path / "output" / date_folder / "txt"
+        txt_dir.mkdir(parents=True, exist_ok=True)
+        (txt_dir / "12时00分.txt").write_text(
+            "zhihu | 知乎\n1. 科技新闻标题 [URL:http://a.com/1]\n",
+            encoding="utf-8",
+        )
+
+        from trendradar.ai.filter_pipeline import AIFilterResult
+
+        class _FakePipeline:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def run(self, all_titles):
+                titles = [dict(t, category="科技") for t in all_titles]
+                return AIFilterResult(
+                    stats=[{
+                        "word": "科技", "count": len(titles), "position": 1,
+                        "percentage": 100.0, "titles": titles,
+                    }],
+                    total_matched=len(titles),
+                    total_processed=len(titles),
+                    success=True,
+                )
+
+        monkeypatch.setattr(main, "AIFilterPipeline", _FakePipeline)
+
+        news_list, _cards_per_batch, _total_batches = get_today_news_cards()
+
+        assert len(news_list) == 1
+        assert news_list[0]["title"] == "科技新闻标题"
+        assert news_list[0]["category"] == "科技"
+
+    def test_ai_mode_falls_back_to_keyword_on_failure(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("CONFIG_PATH", raising=False)
+        _write_config(tmp_path, filter_method="ai")
+        # 关注词留空，等价于"全部新闻都算匹配"（跟现有关键词模式默认行为一致）
+
+        date_folder = format_date_folder()
+        txt_dir = tmp_path / "output" / date_folder / "txt"
+        txt_dir.mkdir(parents=True, exist_ok=True)
+        (txt_dir / "12时00分.txt").write_text(
+            "zhihu | 知乎\n1. 标题一 [URL:http://a.com/1]\n",
+            encoding="utf-8",
+        )
+
+        from trendradar.ai.filter_pipeline import AIFilterResult
+
+        class _FailingPipeline:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def run(self, all_titles):
+                return AIFilterResult(success=False, error="没有配置 API Key")
+
+        monkeypatch.setattr(main, "AIFilterPipeline", _FailingPipeline)
+
+        news_list, _cards_per_batch, _total_batches = get_today_news_cards()
+
+        # 降级成功：走了关键词模式，正常返回新闻（没有 category 字段）
+        assert len(news_list) == 1
+        assert news_list[0]["title"] == "标题一"
+        assert "category" not in news_list[0]
